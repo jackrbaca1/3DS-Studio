@@ -44,3 +44,11 @@ src-tauri/target/
 
 # Local cargo target if ever created inside the tree
 **/3ds-studio-cargo-target/
+
+# Local planning / launch notes (keep on disk; not part of the public product)
+docs/release/phase-*.md
+docs/release/LAUNCH_CHECKLIST.md
+docs/release/ANNOUNCE_*.md
+docs/release/README.md
+docs/images/CAPTURE.md
+docs/architecture.md
