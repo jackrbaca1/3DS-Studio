@@ -16,19 +16,7 @@ Uninstall via Windows Apps. `%APPDATA%\3ds-studio` and `Documents\3DSStudio` pro
 
 ## Screenshots
 
-Add PNGs under [`docs/images/`](docs/images/CAPTURE.md) (`welcome.png`, `editor.png`, `assets.png`, `build-success.png`, `setup-tools.png`). Until those files exist, the gallery below will not render on GitHub.
-
-| Welcome | Editor |
-|---------|--------|
-| ![Welcome](docs/images/welcome.png) | ![Editor](docs/images/editor.png) |
-
-| Assets | Build success |
-|--------|----------------|
-| ![Assets](docs/images/assets.png) | ![Build](docs/images/build-success.png) |
-
-| Setup tools |
-|-------------|
-| ![Setup tools](docs/images/setup-tools.png) |
+Screenshot gallery is planned ([capture guide](docs/images/CAPTURE.md)). Not included in v0.1.0 yet — install from [Releases](https://github.com/jackrbaca1/3DS-Studio/releases) to see the UI.
 
 ## What you can do
 
