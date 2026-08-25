@@ -6,7 +6,7 @@
 |-------|----------|
 | 3DS Studio editor | Windows 10/11 x64 |
 | Building games from Studio | Windows + [devkitPro](https://devkitpro.org/) (devkitARM, 3ds-dev tools) |
-| Playing builds | Citra (or fork) on PC, or a 3DS with homebrew |
+| Playing builds | CFW 3DS (SD / FTP / 3dslink). Emulators optional and unsupported by Studio — see [PLAYING.md](PLAYING.md) |
 
 macOS / Linux Studio builds are not supported yet.
 

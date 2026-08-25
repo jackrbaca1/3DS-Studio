@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ensure-example-project"
+description = "Enables the ensure_example_project command without any pre-configured scope."
+commands.allow = ["ensure_example_project"]
+
+[[permission]]
+identifier = "deny-ensure-example-project"
+description = "Denies the ensure_example_project command without any pre-configured scope."
+commands.deny = ["ensure_example_project"]

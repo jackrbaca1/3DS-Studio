@@ -34,6 +34,8 @@ include $(DEVKITARM)/3ds_rules
 APP_TITLE	:=	3DS Platformer
 APP_DESCRIPTION	:=	A basic platformer game for New 3DS XL
 APP_AUTHOR	:=	devkitPro User
+# Homebrew title UniqueId (20-bit). 3DS Studio replaces this per project — do not share one ID across games.
+APP_UNIQUE_ID	:=	0xF2001
 
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
@@ -203,7 +205,7 @@ clean:
 	@rm -fr $(BUILD) $(TARGET).3dsx $(TARGET).cia $(OUTPUT).smdh $(TARGET).elf $(GFXBUILD)
 
 #---------------------------------------------------------------------------------
-$(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s
+$(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	$(GRAPHICS)/%.t3s
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@tex3ds -i $< -H $(BUILD)/$*.h -d $(DEPSDIR)/$*.d -o $(GFXBUILD)/$*.t3x
@@ -258,7 +260,7 @@ $(OUTPUT).cia: $(OUTPUT).elf $(CIA_RSF) $(CIA_ICON) $(CIA_BANNER)
 		-DAPP_ROMFS="$(TOPDIR)/romfs" \
 		-DAPP_TITLE="$(APP_TITLE)" \
 		-DAPP_PRODUCT_CODE="CTR-H-$(shell echo $(TARGET) | tr '[:lower:]' '[:upper:]' | cut -c1-4)" \
-		-DAPP_UNIQUE_ID=0xF1234
+		-DAPP_UNIQUE_ID=$(APP_UNIQUE_ID)
 
 $(OFILES_SOURCES) : $(HFILES)
 

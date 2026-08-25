@@ -62,8 +62,11 @@ make clean    # Remove build artifacts
 ```
 
 This produces `platformer.3dsx` which you can run via:
-1. **3dslink** (Wi-Fi): `3dslink platformer.3dsx` (console must be on same network)
+1. **3dslink** (Wi-Fi): Homebrew Launcher → **Y**, then Studio **3dslink** or `3dslink platformer.3dsx`
 2. **SD card**: Copy `platformer.3dsx` to `/3ds/` on your SD card, launch from Homebrew Launcher
+3. **FTP**: Upload to `/3ds/` with an on-console FTP server, then launch from Homebrew Launcher
+
+See the parent repo [`docs/PLAYING.md`](../../docs/PLAYING.md) for CIA / FBI / `dspfirm` details.
 
 ## Adding Real Sprites
 
@@ -113,7 +116,7 @@ romfsExit();
 See `gfx/README_SPRITES.txt` for the full sprite and tilemap guide.
 
 ## About output formats
-- `.3dsx` — Homebrew Launcher / Citra (default `make` target)
+- `.3dsx` — Homebrew Launcher / 3dslink (default `make` target)
 - `.cia` — optional `make cia` when makerom/bannertool are installed (see project Makefile)
 
 ## License

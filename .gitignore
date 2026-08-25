@@ -34,6 +34,7 @@ Thumbs.db
 !.env.example
 
 # Build / release artifacts (do not commit)
+dist/
 *.exe
 !scripts/**
 src-tauri/target/

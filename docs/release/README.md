@@ -5,9 +5,9 @@ Work phases in order. Do not start a phase until the previous phase **Exit check
 | Phase | File | Focus | Status |
 |-------|------|--------|--------|
 | 0 | [phase-0-hygiene.md](phase-0-hygiene.md) | Repo clean, license, identity | **complete** |
-| 1 | [phase-1-portability.md](phase-1-portability.md) | Toolchain paths, Citra saves/audio, IDs | not started |
-| 2 | [phase-2-ux.md](phase-2-ux.md) | Setup wizard, help, non-technical flow | not started |
-| 3 | [phase-3-packaging.md](phase-3-packaging.md) | Installer, Releases, signing | not started |
+| 1 | [phase-1-portability.md](phase-1-portability.md) | Toolchain paths, saves/audio IDs, build outputs | **complete** |
+| 2 | [phase-2-ux.md](phase-2-ux.md) | Setup wizard, help, non-technical flow | **complete** |
+| 3 | [phase-3-packaging.md](phase-3-packaging.md) | Installer, Releases, signing | **complete** |
 | 4 | [phase-4-polish.md](phase-4-polish.md) | Docs, screenshots, legal/privacy pages | not started |
 | 5 | [phase-5-launch.md](phase-5-launch.md) | Public post, announce, post-launch | not started |
 

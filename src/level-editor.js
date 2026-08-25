@@ -354,6 +354,58 @@ nextLevelIndex = 0;
 let levels = [createLevel('1-1', 80, 16, 1, false, 0)];
 let currentLevelIdx = 0;
 
+/** Minimal menu + one tutorial stage for new/example projects (not the full template campaign). */
+export function createFreshStarterLevels() {
+  const menu = createLevel('Menu', 80, 16, 1, true, -1);
+  for (let x = 0; x < menu.mapW; x++) {
+    menu.tilemap[13][x] = 1; // TILE_GROUND
+    menu.tilemap[14][x] = 2; // TILE_FILL
+    menu.tilemap[15][x] = 2;
+  }
+  menu.spawnX = 2 * TILE_SIZE;
+  menu.spawnY = 13 * TILE_SIZE - 28;
+
+  const lv = createLevel('1-1', 40, 16, 1, false, 0);
+  lv.features = {
+    doubleJump: false,
+    dialogue: true,
+    wallJump: false,
+    dash: false,
+    groundPound: false,
+    minimap: true,
+  };
+  for (let x = 0; x < lv.mapW; x++) {
+    lv.tilemap[14][x] = 1;
+    lv.tilemap[15][x] = 2;
+  }
+  // Small ledge to practice jump
+  for (let x = 12; x <= 16; x++) {
+    lv.tilemap[11][x] = 4; // TILE_PLATFORM
+  }
+  lv.coins = [
+    { x: 8 * TILE_SIZE + 9, y: 12 * TILE_SIZE + 9 },
+    { x: 14 * TILE_SIZE + 9, y: 9 * TILE_SIZE + 9 },
+    { x: 22 * TILE_SIZE + 9, y: 12 * TILE_SIZE + 9 },
+  ];
+  lv.winOverlay[13][36] = true;
+  lv.winOverlay[13][37] = true;
+  lv.dialoguePreEnabled = true;
+  lv.dialoguePre = [
+    'Welcome! Use Left/Right to move.',
+    'Press A or B to jump.',
+    'Grab the crackers and reach the goal!',
+    '',
+  ];
+  lv.spawnX = 2 * TILE_SIZE;
+  lv.spawnY = 14 * TILE_SIZE - 28;
+
+  return {
+    levels: [menu, lv],
+    currentLevelIdx: 1,
+    nextLevelIndex: 1,
+  };
+}
+
 // Menu BG helpers
 function findMenuLevelIdx() {
   return levels.findIndex(l => l.isMenu);

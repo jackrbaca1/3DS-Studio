@@ -6,6 +6,10 @@ fn main() {
                 "pick_file",
                 "check_toolchain",
                 "create_project",
+                "ensure_example_project",
+                "list_studio_projects",
+                "save_project_as",
+                "create_named_project",
                 "save_config",
                 "compile_project",
                 "compile_project_cia",
@@ -23,6 +27,7 @@ fn main() {
                 "load_project_config",
                 "ensure_studio_integration",
                 "get_asset_status",
+                "get_asset_specs",
             ]),
         ),
     )

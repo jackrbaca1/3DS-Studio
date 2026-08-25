@@ -41,7 +41,7 @@ Complete these as committed files, not vibes.
 - [ ] **4.L.3** Trademark: descriptive use only; add “unofficial” / “not affiliated”
 - [ ] **4.L.4** Warranty disclaimer (AS IS)
 - [ ] **4.L.5** If screenshots show a face/name/Discord, scrub PII
-- [ ] **4.L.6** External links https-only to official or well-known projects (devkitPro, Citra fork you actually recommend — name the fork)
+- [ ] **4.L.6** External links https-only to official or well-known projects (devkitPro; no random firmware mirrors)
 - [ ] **4.L.7** Export control: not applicable to typical homebrew editor, but do not ship encryption circumvention tools
 
 ### Privacy checklist (fill answers)
@@ -63,7 +63,7 @@ Complete these as committed files, not vibes.
 - [ ] **4.1.1** Rewrite root `README.md`: hero = installer link placeholder + what it is + requirements + screenshots
 - [ ] **4.1.2** `docs/USER_GUIDE.md` — new project, editor tools, assets, save/build, CIA
 - [ ] **4.1.3** `docs/TOOLCHAIN.md` — install packages, PATH/`link.exe` conflict, makerom/bannertool
-- [ ] **4.1.4** `docs/PLAYING.md` — controls, Easy mode, Citra setup, dspfirm, save locations
+- [ ] **4.1.4** `docs/PLAYING.md` — controls, Easy mode, SD / FTP / 3dslink, dspfirm, save locations
 - [ ] **4.1.5** `docs/TROUBLESHOOTING.md` — build fail, silent audio, saves empty, SmartScreen, OneDrive target dir
 - [ ] **4.1.6** Rewrite `src-tauri/template/README.md` to match current game (controls, features, build)
 - [ ] **4.1.7** Remove contradictions (e.g. “not a CIA” if CIA is supported)
@@ -71,7 +71,7 @@ Complete these as committed files, not vibes.
 
 ### 4.2 Media
 
-- [ ] **4.2.1** 3–6 screenshots: welcome, editor, assets, build success, in-game (Citra or hardware)
+- [ ] **4.2.1** 3–6 screenshots: welcome, editor, assets, build success, in-game (hardware)
 - [ ] **4.2.2** Store under `docs/images/` with compressed PNGs; no 20MB captures
 - [ ] **4.2.3** Optional 30–90s demo video (YouTube/unlisted OK); link from README — no music you do not have rights to
 
@@ -88,7 +88,7 @@ Complete these as committed files, not vibes.
 - [ ] **4.4.1** Feature list in README matches shipped UI only
 - [ ] **4.4.2** Explicit “Windows only” if still true
 - [ ] **4.4.3** Explicit “devkitPro required to compile”
-- [ ] **4.4.4** Explicit “Citra or CFW 3DS to play”
+- [ ] **4.4.4** Explicit “CFW 3DS to play; Studio only builds packages”
 
 ### 4.5 Safety / abuse
 
@@ -106,7 +106,7 @@ Complete these as committed files, not vibes.
 
 ## Acceptance criteria
 
-- Stranger can go README → installer → Help/docs → Citra play without asking you
+- Stranger can go README → installer → Help/docs → play on 3DS without asking you
 - LEGAL + PRIVACY + SECURITY exist and match actual app behavior
 - Screenshots and feature list are accurate
 - In-app Help and `docs/` do not contradict
@@ -125,7 +125,7 @@ Complete these as committed files, not vibes.
 
 | Date | Decision | Why |
 |------|----------|-----|
-| | Which Citra fork to recommend | |
+| | Recommend a specific emulator (if any) | Prefer none — hardware-first |
 | | Host demo video where | |
 | | Public Issues open at launch? | |
 | | Privacy statements finalized | |

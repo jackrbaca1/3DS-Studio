@@ -51,7 +51,7 @@ Make the project public cleanly: publish Release, open repo, announce once with 
 
 - [ ] **5.1.1** `git status` clean on release commit
 - [ ] **5.1.2** Re-download installer from draft Release on a clean PC; verify SHA256
-- [ ] **5.1.3** Smoke: install → new project → help → (toolchain) build → Citra load
+- [ ] **5.1.3** Smoke: install → new project → help → (toolchain) build → copy/3dslink to 3DS
 - [ ] **5.1.4** Confirm PRIVACY answers still true
 - [ ] **5.1.5** Branch protection on default branch (require PR if working with others)
 
@@ -69,7 +69,7 @@ Include only:
 
 1. What it is (one sentence)
 2. Windows installer link
-3. Demo `.3dsx` + Citra note
+3. Demo `.3dsx` + play notes (`PLAYING.md`: SD / FTP / 3dslink)
 4. “devkitPro required to compile”
 5. Not affiliated with Nintendo
 6. SHA256 or link to checksums file
@@ -86,14 +86,14 @@ Draft announce (edit before send):
 ```text
 3DS Studio v0.1.0 — Windows editor for homebrew 3DS platformers.
 Installer + demo .3dsx: <Release URL>
-Compile requires free devkitPro. Play demo in Citra (see PLAYING.md for dspfirm).
+Compile requires free devkitPro. Play on a CFW 3DS (see PLAYING.md: SD, FTP, or 3dslink; dump dspfirm for audio).
 Unofficial; not affiliated with Nintendo.
 Checksums: SHA256SUMS.txt on the Release.
 ```
 
 ### 5.4 First-week monitoring
 
-- [ ] **5.4.1** Watch Issues for SmartScreen, toolchain path, Citra audio
+- [ ] **5.4.1** Watch Issues for SmartScreen, toolchain path, install/audio questions
 - [ ] **5.4.2** Patch docs fast for repeated questions (prefer doc fix over code if possible)
 - [ ] **5.4.3** If critical bug: `v0.1.1` patch Release
 - [ ] **5.4.4** Log every user-facing bug in Problem log below (even if fixed same day)

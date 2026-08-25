@@ -747,6 +747,8 @@ fn find_newest_with_ext_in_dirs(dirs: &[&Path], ext: &str) -> Option<PathBuf> {
 }
 
 pub fn list_asset_status(project_root: &Path) -> serde_json::Value {
+    use crate::assets::{format_requirement, ASSET_SPECS};
+
     let makefile = std::fs::read_to_string(project_root.join("Makefile")).unwrap_or_default();
     let target = resolve_make_target(project_root, &makefile);
     let icon_rel = if project_root.join(format!("{target}.png")).exists() {
@@ -755,52 +757,53 @@ pub fn list_asset_status(project_root: &Path) -> serde_json::Value {
         "icon.png".to_string()
     };
 
-    let assets = [
-        ("tileset", "gfx/CardBoard3ds-TileSet.png"),
-        ("background1", "gfx/Cavebg.png"),
-        ("background2", "gfx/Cavebg2.png"),
-        ("title", "gfx/Title.png"),
-        ("bottom_menu", "gfx/BottomMenuScreen.png"),
-        ("menu_load", "gfx/LoadGameSelected.png"),
-        ("menu_new", "gfx/NewGameSelected.png"),
-        ("menu_settings", "gfx/SettingsSelected.png"),
-        ("soundtrack", "romfs/soundtrack.mp3"),
-        ("banner", "banner.png"),
-    ];
     let mut out = serde_json::Map::new();
-    for (key, rel) in assets {
+    for spec in ASSET_SPECS {
+        let rel = if spec.key == "icon" {
+            icon_rel.as_str()
+        } else {
+            spec.rel_path
+        };
         let path = project_root.join(rel);
+        // Placeholders are solid dark PNGs we generate — treat as "empty" for UI
+        // unless the user replaced them (file larger / not our fingerprint size).
+        let exists = path.exists();
+        let is_placeholder = exists && is_fresh_placeholder(&path, spec);
         let file_name = path
             .file_name()
             .and_then(|s| s.to_str())
             .unwrap_or(rel)
             .to_string();
+        let requirement = format_requirement(spec);
+        let loaded = if spec.keep_from_template || spec.format == "MP3" {
+            exists
+        } else {
+            exists && !is_placeholder
+        };
         out.insert(
-            key.to_string(),
+            spec.key.to_string(),
             serde_json::json!({
-                "exists": path.exists(),
+                "exists": loaded,
+                "on_disk": exists,
+                "placeholder": is_placeholder,
                 "path": rel,
-                "name": if path.exists() { file_name } else { String::new() }
+                "name": if loaded { file_name } else { String::new() },
+                "requirement": requirement,
+                "format": spec.format,
+                "width": spec.width,
+                "height": spec.height,
             }),
         );
     }
 
-    let icon_path = project_root.join(&icon_rel);
-    let icon_name = icon_path
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or("icon.png")
-        .to_string();
-    out.insert(
-        "icon".to_string(),
-        serde_json::json!({
-            "exists": icon_path.exists(),
-            "path": icon_rel,
-            "name": if icon_path.exists() { icon_name } else { String::new() }
-        }),
-    );
-
     serde_json::Value::Object(out)
+}
+
+fn is_fresh_placeholder(path: &Path, spec: &crate::assets::AssetSpec) -> bool {
+    if spec.keep_from_template || spec.format != "PNG" || spec.width == 0 {
+        return false;
+    }
+    crate::assets::is_placeholder_asset(path)
 }
 
 fn parse_makefile_value(content: &str, key: &str) -> Option<String> {

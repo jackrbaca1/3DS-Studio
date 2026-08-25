@@ -20,7 +20,7 @@ Unofficial homebrew tooling. **Not affiliated with, endorsed by, or related to N
 
 ## Homebrew and hardware
 
-Building and running `.3dsx` / `.cia` homebrew typically requires a user-owned console with custom firmware, or an emulator such as Citra. Installing CFW has risks (bricking, warranty, policy). That is the user’s choice and responsibility.
+Building and running `.3dsx` / `.cia` homebrew typically requires a user-owned console with custom firmware. Installing CFW has risks (bricking, warranty, policy). That is the user’s choice and responsibility. Emulators are optional third-party tools; 3DS Studio does not bundle or launch them.
 
 ## No warranty
 

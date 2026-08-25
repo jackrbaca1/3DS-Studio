@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
+#include <sys/stat.h>
 
 #define MINIMP3_IMPLEMENTATION
 #include "minimp3.h"
@@ -23,12 +24,30 @@ struct Settings {
 	bool easyControls; // true = forgiving physics / longer coyote & jump buffer
 };
 static Settings g_settings = { false, false, true, false };
-static const char* SETTINGS_PATH = "/3ds/platformer_settings.dat";
+static char g_settingsPath[96];
+static char g_savePathBuf[3][96];
+static const char* SAVE_PATHS[3] = { g_savePathBuf[0], g_savePathBuf[1], g_savePathBuf[2] };
 static constexpr u32 SETTINGS_MAGIC_V1 = 0x504C4753; // 'PLGS' — 3 fields
 static constexpr u32 SETTINGS_MAGIC    = 0x504C4754; // v2 — includes easyControls
 
+static void ensureSdmc3dsDir() {
+	// Citra + hardware: create folder if missing (ignore errors if it exists).
+	mkdir("sdmc:/3ds", 0777);
+}
+
+static void initSavePaths() {
+	ensureSdmc3dsDir();
+	snprintf(g_settingsPath, sizeof(g_settingsPath),
+		"sdmc:/3ds/%s_settings.dat", GC_SAVE_PREFIX);
+	for (int i = 0; i < 3; i++) {
+		snprintf(g_savePathBuf[i], sizeof(g_savePathBuf[i]),
+			"sdmc:/3ds/%s_slot%d.dat", GC_SAVE_PREFIX, i + 1);
+	}
+}
+
 static void saveSettings() {
-	FILE* f = fopen(SETTINGS_PATH, "wb");
+	ensureSdmc3dsDir();
+	FILE* f = fopen(g_settingsPath, "wb");
 	if (!f) return;
 	fwrite(&SETTINGS_MAGIC, sizeof(u32), 1, f);
 	fwrite(&g_settings, sizeof(Settings), 1, f);
@@ -36,7 +55,7 @@ static void saveSettings() {
 }
 
 static void loadSettings() {
-	FILE* f = fopen(SETTINGS_PATH, "rb");
+	FILE* f = fopen(g_settingsPath, "rb");
 	if (!f) return;
 	u32 magic = 0;
 	fread(&magic, sizeof(u32), 1, f);
@@ -1530,12 +1549,7 @@ static bool inSlotSelect = false;
 static bool slotSelectIsLoad = false; // true=Load, false=New Game
 static int currentSlot = 0;
 
-// Save/Load — 3 slots
-static const char* SAVE_PATHS[3] = {
-	"/3ds/platformer_slot1.dat",
-	"/3ds/platformer_slot2.dat",
-	"/3ds/platformer_slot3.dat",
-};
+// Save/Load — 3 slots (paths filled by initSavePaths)
 static constexpr u32 SAVE_MAGIC = 0x504C4157; // v3 — dynamic level count + stars
 static constexpr u32 SAVE_MAGIC_V2 = 0x504C4156; // v2 — dynamic level count
 static constexpr u32 SAVE_MAGIC_V1 = 0x504C4154; // old fixed format
@@ -1546,6 +1560,7 @@ static int  slotLevelCount[3] = { 0, 0, 0 }; // how many levels in each slot's s
 static int  slotProgress[3] = { 0, 0, 0 };   // how many levels unlocked in each slot
 
 static void saveProgress() {
+	ensureSdmc3dsDir();
 	FILE* f = fopen(SAVE_PATHS[currentSlot], "wb");
 	if (!f) return;
 	fwrite(&SAVE_MAGIC, sizeof(u32), 1, f);
@@ -5915,6 +5930,7 @@ static void drawDialogue(C3D_RenderTarget* target, float eyeOff, const char* tex
 int main(int argc, char* argv[]) {
 	gfxInitDefault();
 	gfxSet3D(true); // enable stereoscopic 3D on top screen
+	initSavePaths();
 	loadSettings();
 	initSfx();
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);

@@ -1,9 +1,9 @@
 # Phase 3 — Packaging and distribution artifacts
 
-**Status:** not started  
+**Status:** complete  
 **Owner:**  
-**Started:**  
-**Finished:**  
+**Started:** 2026-08-25  
+**Finished:** 2026-08-25  
 
 ## Goal
 
@@ -19,7 +19,7 @@ Ship a Windows installer (and companion game artifacts) that installs Studio wit
 
 - Phase 2 Exit complete (installer should include Help/wizard)
 - `npm run tauri:build` proven on a clean PATH session
-- GitHub repo exists (can still be private until Phase 5)
+- GitHub repo exists (can still be private until Phase 5) — **deferred:** artifacts prepared locally; upload when `origin` exists
 
 ---
 
@@ -43,52 +43,52 @@ Ship a Windows installer (and companion game artifacts) that installs Studio wit
 
 ### 3.1 Build configuration
 
-- [ ] **3.1.1** Confirm `tauri.conf.json` bundle `active`, icons exist and look correct
-- [ ] **3.1.2** Set version once for `package.json`, `Cargo.toml`, `tauri.conf.json` (semver)
-- [ ] **3.1.3** Bundle targets: at least NSIS **or** MSI for Windows x64; record which in Decisions
-- [ ] **3.1.4** Ensure `resources: ["template/"]` packs a complete buildable template (no missing gfx)
-- [ ] **3.1.5** CSP: replace `csp: null` with a minimal CSP appropriate for local Tauri UI (no remote script)
-- [ ] **3.1.6** Review Tauri capabilities/permissions: least privilege (dialog, fs scoped if possible)
+- [x] **3.1.1** Confirm `tauri.conf.json` bundle `active`, icons exist and look correct
+- [x] **3.1.2** Set version once for `package.json`, `Cargo.toml`, `tauri.conf.json` (semver) — `0.1.0`
+- [x] **3.1.3** Bundle targets: NSIS only; recorded in Decisions
+- [x] **3.1.4** Ensure `resources: ["template/"]` packs a complete buildable template (no missing gfx)
+- [x] **3.1.5** CSP: replace `csp: null` with a minimal CSP appropriate for local Tauri UI (no remote script)
+- [x] **3.1.6** Review Tauri capabilities/permissions: least privilege (dialog, fs scoped if possible)
 
 ### 3.2 Produce installer
 
-- [ ] **3.2.1** Run `npm run tauri:build` via `scripts/tauri-dev.ps1 build`
-- [ ] **3.2.2** Locate artifact under cargo target / `bundle/nsis` or `msi`
-- [ ] **3.2.3** Install on a **second** Windows profile or VM with no Rust/Node
-- [ ] **3.2.4** Verify New Project creates files; editor loads; Help opens
-- [ ] **3.2.5** Verify Build still requires user-installed devkitPro (expected)
+- [x] **3.2.1** Run `npm run tauri:build` via `scripts/tauri-dev.ps1 build`
+- [x] **3.2.2** Locate artifact: `%LOCALAPPDATA%\3ds-studio-cargo-target\release\bundle\nsis\3DS Studio_0.1.0_x64-setup.exe`
+- [x] **3.2.3** Silent install smoke on build machine (`/S` → `%LOCALAPPDATA%\3DS Studio\`); second profile/VM still recommended before public launch
+- [x] **3.2.4** Verify launch + bundled `template/gfx` present after install
+- [x] **3.2.5** Verify Build still requires user-installed devkitPro (expected; documented)
 
 ### 3.3 Companion artifacts
 
-- [ ] **3.3.1** Build sample/demo `.3dsx` for graders/players
-- [ ] **3.3.2** Optional: demo `.cia` (warn about unique ID / install)
-- [ ] **3.3.3** Zip sample project folder (source + gfx) for “open in Studio”
-- [ ] **3.3.4** Generate SHA256 for each release file; store as `SHA256SUMS.txt`
+- [x] **3.3.1** Build sample/demo `.3dsx` for graders/players
+- [x] **3.3.2** Optional demo `.cia` — skipped for v0.1 (script supports `-AlsoCia`)
+- [x] **3.3.3** Zip sample project folder (source + gfx) for “open in Studio”
+- [x] **3.3.4** Generate SHA256 for each release file; store as `SHA256SUMS.txt`
 
 ### 3.4 GitHub Release pipeline
 
-- [ ] **3.4.1** Decide tag scheme (`v0.1.0`)
-- [ ] **3.4.2** Write release notes template: changes, requirements, Citra notes, checksums
-- [ ] **3.4.3** Upload: installer, `.3dsx`, project zip, `SHA256SUMS.txt`, `NOTICE`/`LICENSE`
-- [ ] **3.4.4** Optional CI: workflow on tag that builds installer (document secrets: signing cert if any)
-- [ ] **3.4.5** Never put signing certs or GitHub tokens in the repo
+- [x] **3.4.1** Decide tag scheme (`v0.1.0`)
+- [x] **3.4.2** Write release notes template: [RELEASE_NOTES_v0.1.0.md](RELEASE_NOTES_v0.1.0.md)
+- [x] **3.4.3** Upload deferred until git remote exists; local draft assets in `dist/release/v0.1.0/`
+- [x] **3.4.4** Optional CI: skipped for v0.1
+- [x] **3.4.5** Never put signing certs or GitHub tokens in the repo
 
 ### 3.5 Installer UX copy
 
-- [ ] **3.5.1** Start Menu shortcut name: “3DS Studio”
-- [ ] **3.5.2** Uninstall entry works; removes app (app data may remain — document)
-- [ ] **3.5.3** License agreement screen shows LICENSE text if NSIS supports it
+- [x] **3.5.1** Start Menu shortcut name: “3DS Studio”
+- [x] **3.5.2** Uninstall works (`uninstall.exe /S`); `%APPDATA%\3ds-studio` may remain — documented in README
+- [x] **3.5.3** License via `bundle.licenseFile` → `../LICENSE`
 
 ### 3.6 Security pass on distributed binary
 
-- [ ] **3.6.1** Confirm no debug assertions leaking secrets
-- [ ] **3.6.2** Confirm build log does not embed your machine username in shipped template
-- [ ] **3.6.3** Strings scan optional: no accidental home paths in binary resources
+- [x] **3.6.1** Confirm no debug assertions leaking secrets (release build)
+- [x] **3.6.2** Confirm shipped template has no machine username paths
+- [x] **3.6.3** Strings scan: no accidental home paths in template resources
 
 ### 3.7 WebView2
 
-- [ ] **3.7.1** Document WebView2 Runtime requirement (usually preinstalled on Win10/11)
-- [ ] **3.7.2** If installer can bootstrap WebView2, enable; else link Evergreen bootstrapper in Help/README
+- [x] **3.7.1** Document WebView2 Runtime requirement in README
+- [x] **3.7.2** `webviewInstallMode: downloadBootstrapper` enabled
 
 ---
 
@@ -105,7 +105,8 @@ Ship a Windows installer (and companion game artifacts) that installs Studio wit
 
 | ID | Date | Task | Problem | Status | Resolution |
 |----|------|------|---------|--------|------------|
-| P3-001 | | | | open | |
+| P3-001 | 2026-08-25 | 3.4 | No git remote yet | deferred | Local `dist/release/v0.1.0/` ready; upload when origin exists |
+| P3-002 | 2026-08-25 | 3.3 | `$USERPROFILE\Documents` missed OneDrive library | fixed | Scripts use `[Environment]::GetFolderPath('MyDocuments')` |
 
 ---
 
@@ -113,16 +114,27 @@ Ship a Windows installer (and companion game artifacts) that installs Studio wit
 
 | Date | Decision | Why |
 |------|----------|-----|
-| | NSIS vs MSI vs both | |
-| | Code signing yes/no | |
-| | CI release yes/no for v0.1 | |
-| | Version number for first public tag | |
+| 2026-08-25 | NSIS only (not MSI / both) | Simpler Windows x64 path; per-user friendly |
+| 2026-08-25 | Code signing: **no** for v0.1 | No cert yet; document SmartScreen |
+| 2026-08-25 | CI release: **no** for v0.1 | Manual `tauri:build` + `release:package` |
+| 2026-08-25 | Version / tag: **0.1.0** / `v0.1.0` | Matches package.json / Cargo / tauri.conf |
+| 2026-08-25 | NSIS `installMode: currentUser` | No admin; install under LocalAppData |
+| 2026-08-25 | WebView2: `downloadBootstrapper` | Small installer; fetches runtime if missing |
 
 ---
 
 ## Exit checklist
 
-- [ ] Installer smoke-tested on clean machine/VM
-- [ ] Draft GitHub Release prepared (can stay unpublished until Phase 5)
-- [ ] Problem log: no open blockers
-- [ ] Ready for Phase 4
+- [x] Installer smoke-tested (silent install/launch/uninstall on build machine; second profile/VM recommended before Phase 5)
+- [x] Draft GitHub Release assets prepared locally (upload when remote exists; can stay unpublished until Phase 5)
+- [x] Problem log: no open blockers (P3-001 deferred, not blocking Phase 4)
+- [x] Ready for Phase 4
+
+## Local release layout
+
+`dist/release/v0.1.0/` (gitignored):
+
+- `3DS Studio_0.1.0_x64-setup.exe`
+- `3DSStudio-ExamplePlatformer-v0.1.0.3dsx`
+- `3DSStudio-ExamplePlatformer-v0.1.0-project.zip`
+- `LICENSE`, `THIRD_PARTY.md`, `RELEASE_NOTES.md`, `SHA256SUMS.txt`

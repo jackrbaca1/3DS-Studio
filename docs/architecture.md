@@ -20,7 +20,7 @@ UI (src/)  →  Rust (src-tauri/)  →  user project folder  →  .3dsx / .cia
 |------|--------|
 | Level editor, physics, assets, CIA build, 3dslink | Shipped |
 | Configurable toolchain path / setup wizard | Planned (Phases 1–2) |
-| Launch in Citra from Studio | Planned (optional Phase 2) |
+| Emulator launch from Studio | Out of scope — see `docs/PLAYING.md` |
 | Bundled full toolchain | Not planned for v0.1 |
 
 ## Notes

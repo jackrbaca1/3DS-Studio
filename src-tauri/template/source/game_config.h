@@ -10,6 +10,9 @@ static constexpr float GC_GRAVITY      = 0.48f;
 static constexpr float GC_GRAVITY_FALL = 0.78f;
 static constexpr float GC_DASH_SPEED   = 12.00f;
 
+// Saves land on sdmc:/3ds/<prefix>_*.dat (Citra + hardware).
+static constexpr const char* GC_SAVE_PREFIX = "platformer";
+
 static constexpr bool DOUBLE_JUMP_ENABLED   = true;
 static constexpr bool DIALOGUE_ENABLED      = true;
 static constexpr bool WALL_JUMP_ENABLED = true;

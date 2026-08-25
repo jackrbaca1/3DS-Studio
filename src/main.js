@@ -1,5 +1,15 @@
 import { initWorkspaceLayout, expandBuildPanel } from "./workspace-layout.js";
 import {
+  initPhase2Ux,
+  refreshToolchainUi,
+  maybeShowWizardOnLaunch,
+  confirmBuildPreconditions,
+  humanBuildFailure,
+  showCopyBuildPathButton,
+  hideCopyBuildPathButton,
+  prependBuildOneLiner,
+} from "./phase2-ux.js";
+import {
   setAutoSaveCallback,
   setProjectData,
   getProjectData,
@@ -36,6 +46,7 @@ import {
   loadLevelsJSON,
   saveLevelsJSON,
   loadTilesetFromFile,
+  createFreshStarterLevels,
 } from "./level-editor.js";
 
 function waitForTauri(maxMs = 15000) {
@@ -79,7 +90,7 @@ const listen = (...args) => requireTauri().event.listen(...args);
 
 const RECENT_KEY = "studio_recent_projects";
 const THREEDSLINK_IP_KEY = "studio_3dslink_ip";
-const DEFAULT_PLATFORMER = "C:\\devkitPro\\examples\\3ds\\games\\platformer";
+const LAST_PROJECT_KEY = "studio_last_project";
 
 let projectPath = null;
 let saveTimer = null;
@@ -95,6 +106,11 @@ const DEFAULT_CONFIG = {
   gravity: 0.48,
   gravity_fall: 0.78,
   dash_speed: 12.0,
+  double_jump_enabled: true,
+  dialogue_enabled: true,
+  wall_jump_enabled: true,
+  dash_enabled: true,
+  ground_pound_enabled: true,
 };
 
 function defaultConfig() {
@@ -189,6 +205,7 @@ function rememberRecent(path) {
     );
     list.unshift(path);
     localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 8)));
+    localStorage.setItem(LAST_PROJECT_KEY, path);
   } catch {
     /* ignore */
   }
@@ -228,6 +245,11 @@ function scheduleAutoSave() {
   }, 600);
 }
 
+function clearPendingAutosave() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+}
+
 async function syncLevelsToCpp() {
   if (!projectPath) return;
   const block = generateSyncBlock();
@@ -240,14 +262,131 @@ async function saveProject() {
     return;
   }
 
-  const patched = await invoke("ensure_studio_integration", { projectPath });
-  if (patched) {
-    appendBuildLog(
-      "Applied 3DS Studio hooks to main.cpp (game_config.h integration).\n"
+  try {
+    const patched = await invoke("ensure_studio_integration", { projectPath });
+    if (patched) {
+      appendBuildLog(
+        "Applied 3DS Studio hooks to main.cpp (game_config.h integration).\n"
+      );
+    }
+    await persistProjectToDisk();
+    setStatus("Project saved.");
+    renderWelcomeRecent().catch(() => {});
+  } catch (e) {
+    const msg = e?.message || String(e);
+    setStatus("Save failed.");
+    alert(
+      `Save failed:\n${msg}\n\nCheck that the project folder still has Makefile and source/. If OneDrive emptied it, open the project again from Projects or use Start Fresh Example.`
     );
+    throw e;
+  }
+}
+
+let nameProjectMode = null; // "save-as" | "new"
+
+function showNameProjectModal(mode, defaults = {}) {
+  nameProjectMode = mode;
+  const overlay = document.getElementById("name-project-overlay");
+  const title = document.getElementById("name-project-title");
+  const hint = document.getElementById("name-project-hint");
+  const input = document.getElementById("name-project-input");
+  const confirm = document.getElementById("name-project-confirm");
+  const overwrite = document.getElementById("name-project-overwrite");
+  if (!overlay || !input) return;
+
+  if (mode === "save-as") {
+    title.textContent = "Save As";
+    hint.textContent =
+      "Creates a named copy in Documents/3DSStudio. Use a name without spaces (e.g. MyPlatformer).";
+    confirm.textContent = "Save As";
+    input.value = (defaults.name || projectLabel() || "MyPlatformer").replace(/\s+/g, "");
+  } else {
+    title.textContent = "New Project";
+    hint.textContent =
+      "Creates a fresh starter in Documents/3DSStudio. Name cannot contain spaces.";
+    confirm.textContent = "Create";
+    input.value = defaults.name || "MyPlatformer";
+  }
+  if (overwrite) overwrite.checked = false;
+  overlay.classList.remove("hidden");
+  input.focus();
+  input.select();
+}
+
+function hideNameProjectModal() {
+  document.getElementById("name-project-overlay")?.classList.add("hidden");
+  nameProjectMode = null;
+}
+
+async function confirmNameProjectModal() {
+  const input = document.getElementById("name-project-input");
+  const overwrite = document.getElementById("name-project-overwrite")?.checked;
+  const name = input?.value?.trim() || "";
+  if (!name) {
+    alert("Enter a project name.");
+    return;
+  }
+
+  const mode = nameProjectMode;
+  hideNameProjectModal();
+
+  if (mode === "save-as") {
+    await saveProjectAs(name, overwrite);
+  } else if (mode === "new") {
+    await createNamedNewProject(name, overwrite);
+  }
+}
+
+async function saveProjectAs(name, overwrite = false) {
+  if (!projectPath) {
+    alert("Open a project first.");
+    return;
   }
   await persistProjectToDisk();
-  setStatus("Project saved to disk.");
+  setStatus("Saving as…");
+  try {
+    const result = await invoke("save_project_as", {
+      sourcePath: projectPath,
+      name,
+      overwrite: !!overwrite,
+    });
+    await openProject(result.path);
+    setStatus(`Saved as “${result.name}”.`);
+  } catch (err) {
+    const msg = err?.message || String(err);
+    if (/already exists/i.test(msg) && !overwrite) {
+      const ok = confirm(`${msg}\n\nOverwrite it?`);
+      if (ok) await saveProjectAs(name, true);
+      else alert(msg);
+      return;
+    }
+    throw err;
+  }
+}
+
+async function createNamedNewProject(name, overwrite = false) {
+  const config = {
+    ...defaultConfig(),
+    app_title: name,
+  };
+  applyConfigToUI(config);
+  try {
+    const result = await invoke("create_named_project", {
+      name,
+      config,
+      overwrite: !!overwrite,
+    });
+    await seedStarterAndOpen(result.path, config);
+  } catch (err) {
+    const msg = err?.message || String(err);
+    if (/already exists/i.test(msg) && !overwrite) {
+      const ok = confirm(`${msg}\n\nOverwrite it?`);
+      if (ok) await createNamedNewProject(name, true);
+      else alert(msg);
+      return;
+    }
+    throw err;
+  }
 }
 
 async function importLevelsFromMainCpp() {
@@ -301,6 +440,47 @@ const PNG_ASSET_PATHS = {
   banner: "banner.png",
 };
 
+/** Fallback specs if get_asset_specs IPC is unavailable. */
+const ASSET_REQUIREMENTS = {
+  tileset: "PNG 512×512",
+  background1: "PNG 256×240",
+  background2: "PNG 256×240",
+  title: "PNG 400×240",
+  bottom_menu: "PNG 320×240",
+  menu_load: "PNG 400×240",
+  menu_new: "PNG 400×240",
+  menu_settings: "PNG 400×240",
+  soundtrack: "MP3",
+  icon: "PNG 48×48",
+  banner: "PNG 256×128",
+};
+
+let assetSpecsByKey = { ...ASSET_REQUIREMENTS };
+
+async function loadAssetSpecs() {
+  try {
+    const list = await invoke("get_asset_specs");
+    if (Array.isArray(list)) {
+      const map = {};
+      for (const s of list) {
+        map[s.key] = s.requirement || ASSET_REQUIREMENTS[s.key] || s.format;
+      }
+      assetSpecsByKey = { ...ASSET_REQUIREMENTS, ...map };
+    }
+  } catch {
+    assetSpecsByKey = { ...ASSET_REQUIREMENTS };
+  }
+}
+
+function assetRequirement(key) {
+  return assetSpecsByKey[key] || ASSET_REQUIREMENTS[key] || "PNG";
+}
+
+function emptyAssetHint(key) {
+  const req = assetRequirement(key);
+  return key === "tileset" ? `Default tileset · ${req}` : `Needs ${req}`;
+}
+
 function clearAssetThumb(thumbEl, slot) {
   if (!thumbEl) return;
   if (thumbEl.dataset.objectUrl) {
@@ -340,8 +520,9 @@ async function setAssetThumb(slot, key, info) {
 
   clearAssetThumb(thumbEl, slot);
   if (key === "soundtrack") return;
-
-  if (!info.exists || !PNG_ASSET_PATHS[key] && key !== "icon") return;
+  // Show real art or colored placeholders; skip only when nothing is on disk.
+  if (!info.on_disk && !info.exists) return;
+  if (!PNG_ASSET_PATHS[key] && key !== "icon") return;
 
   try {
     const rel = await assetRelPath(key, info);
@@ -366,14 +547,18 @@ async function refreshAssetSlots() {
     if (!slot) continue;
 
     const fileEl = slot.querySelector(".asset-file");
+    const req = info.requirement || assetRequirement(key);
     if (info.exists) {
       slot.classList.add("loaded");
-      if (fileEl) fileEl.textContent = info.name || "Imported";
+      if (fileEl) {
+        fileEl.textContent = info.name ? `${info.name} · ${req}` : req;
+      }
     } else {
       slot.classList.remove("loaded");
       if (fileEl) {
-        fileEl.textContent =
-          key === "soundtrack" ? "Click to import MP3…" : "Click to import PNG…";
+        fileEl.textContent = info.placeholder
+          ? `Placeholder blocks · replace with ${req}`
+          : emptyAssetHint(key);
       }
     }
 
@@ -393,12 +578,17 @@ async function loadEditorTilesetPreview() {
 }
 
 async function openProject(path) {
+  clearPendingAutosave();
+
   const inspect = await invoke("inspect_project", { projectPath: path });
   if (!inspect.valid) {
-    alert(inspect.message);
+    alert(
+      `${inspect.message}\n\nPath:\n${path}\n\nIf files are missing (OneDrive “online only”), download the folder or Start Fresh Example.`
+    );
     return;
   }
 
+  // Bind path only after validation so autosave cannot write into the wrong folder.
   projectPath = path;
   rememberRecent(path);
   document.getElementById("welcome-screen").classList.add("hidden");
@@ -419,7 +609,7 @@ async function openProject(path) {
       await supplementFromMainCppIfNeeded();
     }
   } catch {
-    /* no studio_project.json */
+    /* no studio_project.json — load from this project's main.cpp only */
   }
 
   applyConfigToUI(mergeProjectConfig(fileConfig, jsonConfig));
@@ -443,40 +633,136 @@ async function openProject(path) {
     ? "Project loaded."
     : "Project loaded. Save once to add game_config.h for live physics tuning.";
   setStatus(hint);
+  renderWelcomeRecent().catch(() => {});
+}
+
+/** Write a fresh starter campaign into this folder, then open it. Levels stay in that project only. */
+async function seedStarterAndOpen(path, config) {
+  clearPendingAutosave();
+  projectPath = path;
+  if (config) applyConfigToUI(config);
+  setProjectData(createFreshStarterLevels());
+  await persistProjectToDisk();
+  await openProject(path);
 }
 
 async function pickProjectDirectory(title) {
+  let defaultPath = projectPath || "";
+  try {
+    defaultPath = defaultPath || localStorage.getItem(LAST_PROJECT_KEY) || "";
+  } catch {
+    /* ignore */
+  }
   return invoke("pick_directory", {
     title,
-    defaultPath: projectPath || DEFAULT_PLATFORMER,
+    defaultPath: defaultPath || null,
   });
 }
 
 async function newProject() {
-  const dest = await pickProjectDirectory("Choose folder for your new game project");
-  if (!dest) return;
-
-  const config = defaultConfig();
-  applyConfigToUI(config);
-  await invoke("create_project", { destination: dest, config });
-  await openProject(dest);
+  showNameProjectModal("new");
 }
 
 async function openExistingProject() {
   const dest = await pickProjectDirectory(
-    "Open your devkitPro platformer project folder (contains Makefile and source/main.cpp)"
+    "Open a 3DS Studio project folder (contains Makefile and source/main.cpp)"
   );
   if (!dest) return;
   await openProject(dest);
 }
 
-async function openDefaultPlatformer() {
-  const inspect = await invoke("inspect_project", { projectPath: DEFAULT_PLATFORMER });
-  if (inspect.valid) {
-    await openProject(DEFAULT_PLATFORMER);
+/** Always rematerialize the example and seed a clean starter campaign. */
+async function openFreshExampleProject() {
+  setWelcomeStatus("Creating fresh example…");
+  const result = await invoke("ensure_example_project", { reset: true });
+  const path = result.path;
+  const config = {
+    ...defaultConfig(),
+    app_title: "ExamplePlatformer",
+    app_description: "Starter example for 3DS Studio",
+    app_author: "3DS Studio",
+  };
+  await seedStarterAndOpen(path, config);
+}
+
+async function renderWelcomeRecent() {
+  const wrap = document.getElementById("welcome-recent");
+  const listEl = document.getElementById("welcome-recent-list");
+  if (!wrap || !listEl) return;
+
+  let projects = [];
+  try {
+    projects = await invoke("list_studio_projects");
+  } catch (e) {
+    console.warn("list_studio_projects:", e);
+    // Fallback to browser recent paths if library scan fails
+    projects = getRecentProjects().map((path) => ({
+      name: projectDisplayName(path),
+      path,
+      modified: 0,
+    }));
+  }
+
+  listEl.innerHTML = "";
+  wrap.classList.remove("hidden");
+  if (!projects.length) {
+    listEl.innerHTML =
+      '<p class="welcome-recent-empty">No projects yet. Start Fresh Example or New Project to begin.</p>';
     return;
   }
-  await openExistingProject();
+
+  for (const proj of projects.slice(0, 24)) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "welcome-recent-item";
+    btn.title = proj.path;
+    const isExample =
+      proj.name === "ExamplePlatformer" || proj.name === "Example Platformer";
+    btn.innerHTML = `<span class="welcome-recent-name">${escapeHtml(
+      proj.name
+    )}${isExample ? ' <span class="welcome-recent-tag">example</span>' : ""}</span><span class="welcome-recent-path">${escapeHtml(
+      proj.path
+    )}</span>`;
+    btn.addEventListener("click", async () => {
+      try {
+        btn.disabled = true;
+        setWelcomeStatus("Opening…");
+        await openProject(proj.path);
+      } catch (err) {
+        console.error(err);
+        const msg = err?.message || String(err);
+        showWelcomeError(msg);
+        alert(msg);
+      } finally {
+        btn.disabled = false;
+        checkToolchain();
+        renderWelcomeRecent().catch(() => {});
+      }
+    });
+    listEl.appendChild(btn);
+  }
+}
+
+function getRecentProjects() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    return Array.isArray(list) ? list.filter((p) => typeof p === "string" && p) : [];
+  } catch {
+    return [];
+  }
+}
+
+function projectDisplayName(path) {
+  const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
+  return parts[parts.length - 1] || path;
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function appendBuildLog(text) {
@@ -559,24 +845,38 @@ async function runBuild(cleanFirst = false, buildKind = "3dsx") {
     return;
   }
 
-  await saveProject();
+  if (!cleanFirst) {
+    const ok = await confirmBuildPreconditions(buildKind, projectPath);
+    if (!ok) return;
+  }
 
   expandBuildPanel();
   const out = document.getElementById("build-output");
   if (out) out.textContent = "";
+  hideCopyBuildPathButton();
   setBuildState(true);
 
   try {
+    // Save first so levels/config are on disk; failures used to abort before compile with no build log.
+    await persistProjectToDisk();
     if (cleanFirst) {
       await invoke("clean_project", { projectPath });
-    }
-    if (buildKind === "cia") {
+    } else if (buildKind === "cia") {
       await invoke("compile_project_cia", { projectPath });
     } else {
       await invoke("compile_project", { projectPath });
     }
+    if (!cleanFirst) {
+      appendBuildLog(
+        `\nDone. Loadable .3dsx / .cia (if built) are in the project folder:\n${projectPath}\n`
+      );
+      showCopyBuildPathButton(projectPath);
+    }
   } catch (e) {
-    appendBuildLog(`\n${e}\n`);
+    const msg = e?.message || String(e);
+    prependBuildOneLiner(humanBuildFailure(msg));
+    appendBuildLog(`\n${msg}\n`);
+    alert(humanBuildFailure(msg));
   } finally {
     setBuildState(false);
   }
@@ -588,10 +888,11 @@ async function importAsset(assetType) {
     return;
   }
 
+  const req = assetRequirement(assetType);
   const extensions =
     assetType === "soundtrack" ? ["mp3"] : ["png"];
   const picked = await invoke("pick_file", {
-    title: `Import ${assetType}`,
+    title: `Import ${assetType} (${req})`,
     extensions,
   });
   if (!picked) return;
@@ -608,21 +909,11 @@ async function importAsset(assetType) {
     const blob = new Blob([new Uint8Array(bytes)], { type: "image/png" });
     loadTilesetFromFile(new File([blob], "tileset.png", { type: "image/png" }));
   }
-  setStatus(`Imported ${assetType}. Rebuild to bake assets into the ROM.`);
+  setStatus(`Imported ${assetType} (${req}). Rebuild to bake assets into the ROM.`);
 }
 
 async function checkToolchain() {
-  const el = document.getElementById("toolchain-status");
-  if (!el) return;
-  try {
-    const path = await invoke("check_toolchain");
-    el.textContent = `devkitPro ready — builds will produce .3dsx (${path})`;
-    el.style.color = "var(--success)";
-  } catch {
-    el.textContent =
-      "devkitARM not found at C:\\devkitPro. Install devkitPro to compile.";
-    el.style.color = "var(--warning)";
-  }
+  await refreshToolchainUi();
 }
 
 function bindConfigSliders() {
@@ -730,7 +1021,15 @@ function bindEditorControls() {
 }
 
 function bindTopBar() {
+  document.getElementById("btn-projects")?.addEventListener("click", () => showWelcomeScreen());
   document.getElementById("btn-save")?.addEventListener("click", () => saveProject());
+  document.getElementById("btn-save-as")?.addEventListener("click", () => {
+    if (!projectPath) {
+      alert("Open a project first.");
+      return;
+    }
+    showNameProjectModal("save-as");
+  });
   document.getElementById("btn-export-cpp")?.addEventListener("click", showExport);
   document.getElementById("btn-compile")?.addEventListener("click", () => runBuild(false));
   document.getElementById("btn-build-cia")?.addEventListener("click", () => runBuild(false, "cia"));
@@ -745,6 +1044,26 @@ function bindTopBar() {
   document.getElementById("threedslink-ip")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") run3dslink();
     if (e.key === "Escape") hide3dslinkModal();
+  });
+
+  document.getElementById("name-project-confirm")?.addEventListener("click", () => {
+    confirmNameProjectModal().catch((err) => {
+      console.error(err);
+      alert(err?.message || String(err));
+    });
+  });
+  document.getElementById("name-project-cancel")?.addEventListener("click", hideNameProjectModal);
+  document.getElementById("name-project-overlay")?.addEventListener("click", (e) => {
+    if (e.target.id === "name-project-overlay") hideNameProjectModal();
+  });
+  document.getElementById("name-project-input")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      confirmNameProjectModal().catch((err) => {
+        console.error(err);
+        alert(err?.message || String(err));
+      });
+    }
+    if (e.key === "Escape") hideNameProjectModal();
   });
   document.getElementById("btn-open-folder")?.addEventListener("click", () => {
     if (projectPath) invoke("open_project_folder", { projectPath });
@@ -812,8 +1131,8 @@ function bindWelcomeAction(id, handler) {
 
 function bindWelcome() {
   bindWelcomeAction("btn-new-project", newProject);
-  bindWelcomeAction("btn-open-project", openExistingProject);
-  bindWelcomeAction("btn-open-platformer", openDefaultPlatformer);
+  bindWelcomeAction("btn-open-other-folder", openExistingProject);
+  bindWelcomeAction("btn-start-example", openFreshExampleProject);
 }
 
 function bindAssets() {
@@ -860,6 +1179,23 @@ function showWelcomeError(message) {
   el.classList.remove("hidden");
 }
 
+async function showWelcomeScreen() {
+  clearPendingAutosave();
+  if (projectPath) {
+    try {
+      await persistProjectToDisk();
+    } catch (e) {
+      console.warn("save before welcome:", e);
+    }
+  }
+  projectPath = null;
+  document.getElementById("welcome-screen")?.classList.remove("hidden");
+  document.getElementById("project-name-display").textContent = "";
+  setStatus("Choose a project.");
+  renderWelcomeRecent().catch(() => {});
+  checkToolchain();
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
   try {
     await waitForTauri();
@@ -891,7 +1227,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     setAutoSaveCallback(scheduleAutoSave);
-    checkToolchain();
+    await loadAssetSpecs();
+    initPhase2Ux({ invoke });
+    await checkToolchain();
+    maybeShowWizardOnLaunch().catch(() => {});
+    renderWelcomeRecent().catch(() => {});
 
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.key === "s") {

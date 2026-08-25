@@ -36,12 +36,16 @@
         waitInvoke(15000)
           .then(function (invoke) {
             status("Checking devkitPro…");
-            return invoke("check_toolchain")
-              .then(function (path) {
-                status("devkitPro ready — builds will produce .3dsx (" + path + ")");
+            return invoke("get_toolchain_status")
+              .then(function (report) {
+                if (report && report.message) {
+                  status(report.message);
+                } else {
+                  status("Checking devkitPro…");
+                }
               })
               .catch(function () {
-                status("Ready — install devkitPro at C:\\devkitPro to compile .3dsx");
+                status("Ready — install devkitPro (or set DEVKITPRO) to compile .3dsx");
               });
           })
           .catch(function (e) {
@@ -58,34 +62,56 @@
 <!-- ═══ Welcome Screen ═══ -->
 <div id="welcome-screen">
   <div class="welcome-card">
-    <h1>3DS Studio</h1>
-    <p>A visual, code-free editor for Nintendo 3DS platformer games.<br>Open your devkitPro platformer folder, edit levels, tune physics, and build a <strong>.3dsx</strong>.</p>
-    <div class="welcome-actions">
-      <button class="welcome-btn new-project" id="btn-open-platformer">Open My Platformer</button>
-      <button class="welcome-btn open-project" id="btn-open-project">Open Other Folder…</button>
-      <button class="welcome-btn open-project" id="btn-new-project" style="margin-top:4px; font-size:12px; padding:10px;">New Project from Template</button>
+    <div class="welcome-hero">
+      <div class="welcome-intro">
+        <h1>3DS Studio</h1>
+        <p>A visual, code-free editor for Nintendo 3DS platformer games. Projects live in <strong>Documents/3DSStudio</strong> (no spaces — required by the 3DS build tools). Save, Save As, and open by name.</p>
+        <div class="welcome-actions">
+          <button class="welcome-btn new-project" id="btn-start-example">Start Fresh Example</button>
+          <button class="welcome-btn open-project" id="btn-new-project">New Project…</button>
+          <button class="welcome-btn open-project" id="btn-open-other-folder">Open Other Folder…</button>
+          <div class="welcome-secondary-actions">
+            <button type="button" class="welcome-link-btn" id="btn-welcome-setup">Setup tools…</button>
+            <button type="button" class="welcome-link-btn" id="btn-welcome-help">Help</button>
+          </div>
+        </div>
+        <div id="welcome-error" class="welcome-error hidden"></div>
+      </div>
+      <div class="welcome-side">
+        <div id="welcome-recent" class="welcome-recent">
+          <div class="welcome-recent-label">Your projects</div>
+          <div id="welcome-recent-list" class="welcome-recent-list"></div>
+        </div>
+        <div class="welcome-toolchain-row">
+          <span id="welcome-toolchain-chip" class="toolchain-chip chip-muted">Tools…</span>
+          <div id="toolchain-status" class="toolchain-status">Loading…</div>
+        </div>
+      </div>
     </div>
-    <div id="welcome-error" class="welcome-error hidden"></div>
-    <div id="toolchain-status" style="margin-top:20px; font-size:11px; color:#5a6478;">Loading…</div>
   </div>
 </div>
 
 <!-- ═══ Top Bar ═══ -->
 <div id="topbar">
   <span class="app-title">3DS STUDIO</span>
-  <button class="topbar-btn" id="btn-save" title="Save project (Ctrl+S)">💾 Save</button>
+  <button class="topbar-btn" id="btn-projects" title="Back to projects">Projects</button>
+  <button class="topbar-btn" id="btn-save" title="Save project (Ctrl+S)">Save</button>
+  <button class="topbar-btn" id="btn-save-as" title="Save a copy under a new name">Save As…</button>
+  <button class="topbar-btn" id="btn-help" title="Help">Help</button>
+  <button class="topbar-btn" id="btn-setup-tools" title="Detect and set up build tools">Setup tools…</button>
   <button class="topbar-btn" id="btn-export-cpp" title="Export levels to C++">Export C++</button>
   <button class="topbar-btn" id="btn-reimport-cpp" title="Reload levels from main.cpp">Reload C++</button>
   <button class="topbar-btn" id="btn-import-json">Load JSON</button>
   <button class="topbar-btn" id="btn-save-json">Save JSON</button>
   <button class="topbar-btn" id="btn-trackpad-mode" title="Toggle trackpad mode (T)">Trackpad: Off</button>
   <span class="topbar-spacer"></span>
+  <span id="topbar-toolchain-chip" class="toolchain-chip chip-muted" title="Build toolchain status">Tools…</span>
   <span id="project-name-display"></span>
-  <button class="topbar-btn success" id="btn-compile" title="Compile game">▶ Build</button>
+  <button class="topbar-btn success" id="btn-compile" title="Compile .3dsx">▶ Build 3dsx</button>
   <button class="topbar-btn success" id="btn-build-cia" title="Build installable .cia package">Build CIA</button>
   <button class="topbar-btn" id="btn-3dslink" title="Send .3dsx to 3DS via 3dslink (HB Launcher → Y)">3dslink</button>
   <button class="topbar-btn danger" id="btn-clean" title="Clean build">Clean</button>
-  <button class="topbar-btn" id="btn-open-folder" title="Open project folder">📁</button>
+  <button class="topbar-btn" id="btn-open-folder" title="Open project folder">Folder</button>
 </div>
 
 <!-- ═══ Workspace (editor + build console) ═══ -->
@@ -155,16 +181,16 @@
     <div class="panel-section">
       <h3>Tools</h3>
       <div class="tool-grid">
-        <button class="tool-btn active" data-tool="paint">Paint</button>
-        <button class="tool-btn" data-tool="erase">Erase</button>
-        <button class="tool-btn" data-tool="fill">Fill</button>
-        <button class="tool-btn" data-tool="coin">Cracker</button>
-        <button class="tool-btn" data-tool="enemy">Enemy</button>
-        <button class="tool-btn" data-tool="spawn">Spawn</button>
-        <button class="tool-btn" data-tool="tile3d">3D</button>
-        <button class="tool-btn" data-tool="warp">Warp</button>
-        <button class="tool-btn" data-tool="win">Win</button>
-        <button class="tool-btn" data-tool="checkpoint">Checkpoint</button>
+        <button class="tool-btn active" data-tool="paint" title="Paint selected tile">Paint</button>
+        <button class="tool-btn" data-tool="erase" title="Erase tiles">Erase</button>
+        <button class="tool-btn" data-tool="fill" title="Flood-fill connected tiles">Fill</button>
+        <button class="tool-btn" data-tool="coin" title="Place cracker collectibles">Cracker</button>
+        <button class="tool-btn" data-tool="enemy" title="Place enemies">Enemy</button>
+        <button class="tool-btn" data-tool="spawn" title="Set player spawn">Spawn</button>
+        <button class="tool-btn" data-tool="tile3d" title="3D tile — raised block in-game (uses GPU budget)">3D</button>
+        <button class="tool-btn" data-tool="warp" title="Warp door — links to another level">Warp</button>
+        <button class="tool-btn" data-tool="win" title="Level exit / win pad">Win</button>
+        <button class="tool-btn" data-tool="checkpoint" title="Mid-level respawn point">Checkpoint</button>
       </div>
       <div class="toggle-row" style="margin-top:10px;">
         <input type="checkbox" id="trackpad-mode" />
@@ -190,7 +216,7 @@
     <!-- Per-level resource limits (3DS runtime) -->
     <div class="panel-section" id="level-budget-section">
       <h3>Level Budget</h3>
-      <p id="level-budget-hint" class="panel-hint">Counts for the selected level vs game maximums.</p>
+      <p id="level-budget-hint" class="panel-hint" title="3DS memory/entity caps. Stay under the limits or the level may fail to load.">Counts for the selected level vs game maximums.</p>
       <div id="level-budget-list" class="level-budget-list"></div>
       <p id="level-budget-ram" class="panel-hint level-budget-ram"></p>
     </div>
@@ -415,28 +441,28 @@
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Tileset</div>
-          <div class="asset-file">Click to import PNG…</div>
+          <div class="asset-file">Needs PNG 512×512</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="background1">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Cave Background 1</div>
-          <div class="asset-file">Click to import PNG…</div>
+          <div class="asset-file">Needs PNG 256×240</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="background2">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Cave Background 2</div>
-          <div class="asset-file">Click to import PNG…</div>
+          <div class="asset-file">Needs PNG 256×240</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="title">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Title Screen</div>
-          <div class="asset-file">Click to import PNG…</div>
+          <div class="asset-file">Needs PNG 400×240</div>
         </div>
       </div>
 
@@ -445,28 +471,28 @@
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Menu Background</div>
-          <div class="asset-file">BottomMenuScreen.png…</div>
+          <div class="asset-file">Needs PNG 320×240</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="menu_load">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Load Button (highlight)</div>
-          <div class="asset-file">LoadGameSelected.png…</div>
+          <div class="asset-file">Needs PNG 400×240</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="menu_new">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">New Game Button (highlight)</div>
-          <div class="asset-file">NewGameSelected.png…</div>
+          <div class="asset-file">Needs PNG 400×240</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="menu_settings">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Settings Button (highlight)</div>
-          <div class="asset-file">SettingsSelected.png…</div>
+          <div class="asset-file">Needs PNG 400×240</div>
         </div>
       </div>
 
@@ -475,21 +501,21 @@
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Soundtrack</div>
-          <div class="asset-file">Click to import MP3…</div>
+          <div class="asset-file">Needs MP3</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="icon">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">Home Menu Icon</div>
-          <div class="asset-file">48×48 PNG…</div>
+          <div class="asset-file">Needs PNG 48×48</div>
         </div>
       </div>
       <div class="asset-slot" data-asset="banner">
         <div class="asset-thumb" aria-hidden="true"></div>
         <div class="asset-info">
           <div class="asset-label">CIA Banner</div>
-          <div class="asset-file">256×128 PNG…</div>
+          <div class="asset-file">Needs PNG 256×128</div>
         </div>
       </div>
     </div>
@@ -514,21 +540,82 @@
     <h4>Build Console</h4>
     <button type="button" class="dock-collapse-btn" id="build-toggle" data-dock-collapse="build" aria-label="Collapse build console" title="Collapse">▼</button>
   </div>
+  <div id="build-path-actions" class="build-path-actions hidden">
+    <span id="build-path-label" class="build-path-label"></span>
+    <button type="button" class="topbar-btn" id="btn-copy-build-path">Copy project path</button>
+  </div>
   <div id="build-output" class="dock-scroll"></div>
 </div>
 
+</div>
+
+<!-- ═══ Toolchain wizard ═══ -->
+<div id="toolchain-wizard-overlay" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
+  <div class="wizard-dialog">
+    <div class="wizard-header">
+      <h3 id="wizard-title">Setup build tools</h3>
+      <button type="button" id="wizard-close" class="modal-x" aria-label="Close">✕</button>
+    </div>
+    <p id="wizard-edit-note" class="wizard-edit-note">You can still open and edit projects without these tools.</p>
+    <p id="wizard-message" class="wizard-message">Checking…</p>
+    <dl class="wizard-meta">
+      <div><dt>DEVKITPRO</dt><dd id="wizard-root">—</dd></div>
+      <div><dt>Source</dt><dd id="wizard-source">—</dd></div>
+    </dl>
+    <h4 class="wizard-sub">Tools</h4>
+    <ul id="wizard-missing" class="wizard-tool-list"></ul>
+    <div class="wizard-actions">
+      <button type="button" class="topbar-btn" id="wizard-open-docs">Open install docs</button>
+      <button type="button" class="topbar-btn" id="wizard-browse">Browse for DEVKITPRO…</button>
+      <button type="button" class="topbar-btn" id="wizard-clear-path">Use default path</button>
+      <button type="button" class="topbar-btn retest-idle" id="wizard-retest">Retest</button>
+      <button type="button" class="topbar-btn" id="wizard-cancel">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Help panel ═══ -->
+<div id="help-overlay" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="help-dialog">
+    <div class="help-header">
+      <h3 id="help-title">Help</h3>
+      <button type="button" id="help-close" class="modal-x" aria-label="Close help">✕</button>
+    </div>
+    <div class="help-layout">
+      <nav id="help-nav" class="help-nav" aria-label="Help sections"></nav>
+      <div id="help-body" class="help-body"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ 3dslink IP Modal ═══ -->
 <div id="threedslink-overlay" class="hidden modal-overlay">
   <div class="threedslink-dialog">
     <h3>Connect with 3dslink</h3>
-    <p class="threedslink-hint">On your 3DS, open Homebrew Launcher and press <strong>Y</strong> to show the console IP. Enter that address below.</p>
+    <p class="threedslink-hint">On your 3DS, open Homebrew Launcher and press <strong>Y</strong> to show the console IP. Enter that address below. For SD card or FTP install, open <strong>Help → Playing on 3DS</strong>.</p>
     <label class="threedslink-label" for="threedslink-ip">3DS IP address</label>
     <input type="text" id="threedslink-ip" placeholder="192.168.1.100" autocomplete="off" spellcheck="false" />
     <div class="threedslink-actions">
       <button type="button" class="topbar-btn" id="threedslink-cancel">Cancel</button>
-      <button type="button" class="topbar-btn primary" id="threedslink-connect">Connect</button>
+      <button type="button" class="topbar-btn success" id="threedslink-connect">Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Save As / New Project name Modal ═══ -->
+<div id="name-project-overlay" class="hidden modal-overlay">
+  <div class="threedslink-dialog">
+    <h3 id="name-project-title">Save As</h3>
+    <p class="threedslink-hint" id="name-project-hint">Saved projects live in Documents/3DSStudio under this name (no spaces).</p>
+    <label class="threedslink-label" for="name-project-input">Project name</label>
+    <input type="text" id="name-project-input" placeholder="MyPlatformer" autocomplete="off" spellcheck="false" maxlength="64" />
+    <label class="name-project-overwrite">
+      <input type="checkbox" id="name-project-overwrite" />
+      Overwrite if that name already exists
+    </label>
+    <div class="threedslink-actions">
+      <button type="button" class="topbar-btn" id="name-project-cancel">Cancel</button>
+      <button type="button" class="topbar-btn success" id="name-project-confirm">Save</button>
     </div>
   </div>
 </div>

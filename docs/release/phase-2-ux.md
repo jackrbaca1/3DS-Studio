@@ -1,9 +1,9 @@
 # Phase 2 — Non-technical UX
 
-**Status:** not started  
+**Status:** complete  
 **Owner:**  
-**Started:**  
-**Finished:**  
+**Started:** 2026-08-25  
+**Finished:** 2026-08-25  
 
 ## Goal
 
@@ -17,7 +17,7 @@ A person who can install apps but not debug toolchains can create a project, und
 
 ## Prerequisites
 
-- Phase 1 Exit complete (toolchain resolution + Citra fixes exist to teach)
+- Phase 1 Exit complete (toolchain resolution + save/audio path fixes exist to teach)
 
 ---
 
@@ -25,7 +25,7 @@ A person who can install apps but not debug toolchains can create a project, und
 
 | Item | Action |
 |------|--------|
-| External links | Wizard “Download devkitPro / Citra” must open **https** official URLs only; no random mirrors |
+| External links | Wizard “Download devkitPro” must open **https** official URLs only; no random mirrors |
 | No silent downloads | Do not auto-download toolchains or emulators without explicit user action |
 | No account system | Do not add login “for convenience” in this phase |
 | Help content | No instructions for piracy, game dumping of commercial titles, or bypassing paid content |
@@ -38,64 +38,64 @@ A person who can install apps but not debug toolchains can create a project, und
 
 ### 2.1 First-run / toolchain wizard
 
-- [ ] **2.1.1** On launch or first Build: if toolchain incomplete, show modal/wizard (not only console text)
-- [ ] **2.1.2** Steps: Detect → What’s missing → Open install docs / link → Browse for DEVKITPRO → Retest
-- [ ] **2.1.3** Persist chosen path (uses Phase 1 config)
-- [ ] **2.1.4** Distinguish “Studio can run” vs “Build available”
-- [ ] **2.1.5** Never block opening/editing projects when toolchain is missing
+- [x] **2.1.1** On launch or first Build: if toolchain incomplete, show modal/wizard (not only console text)
+- [x] **2.1.2** Steps: Detect → What’s missing → Open install docs / link → Browse for DEVKITPRO → Retest
+- [x] **2.1.3** Persist chosen path (uses Phase 1 config)
+- [x] **2.1.4** Distinguish “Studio can run” vs “Build available”
+- [x] **2.1.5** Never block opening/editing projects when toolchain is missing
 
 ### 2.2 Welcome screen
 
-- [ ] **2.2.1** Actions: New Project, Open Project, Open Sample (if sample path exists), Help
-- [ ] **2.2.2** Remove reliance on “Open My Platformer” hardcoded examples path
-- [ ] **2.2.3** Show last 3 recent projects (paths only; local)
-- [ ] **2.2.4** Toolchain status chip: OK / Missing tools / Path custom
+- [x] **2.2.1** Actions: New Project, Open Folder, Start Fresh Example, Help (+ project list)
+- [x] **2.2.2** Remove reliance on “Open My Platformer” hardcoded examples path
+- [x] **2.2.3** Show recent / library projects (paths only; local)
+- [x] **2.2.4** Toolchain status chip: OK / Missing tools / Path custom
 
 ### 2.3 In-app Help
 
-- [ ] **2.3.1** Help panel or window with sections: Editing, Assets, Build, Citra play, CIA, Controls, Troubleshooting
-- [ ] **2.3.2** Content can be static HTML/Markdown shipped in app resources (same text later reused in `docs/`)
-- [ ] **2.3.3** Include Citra `dspfirm.cdc` steps and save-slot notes
-- [ ] **2.3.4** Include Easy Controls / Sprint toggle pointers
-- [ ] **2.3.5** “Copy build output path” after successful build
+- [x] **2.3.1** Help panel or window with sections: Editing, Assets, Build, Playing on 3DS (SD / FTP / 3dslink), CIA, Controls, Troubleshooting
+- [x] **2.3.2** Content can be static HTML/Markdown shipped in app resources (same text later reused in `docs/`)
+- [x] **2.3.3** Include `dspfirm.cdc` dump steps and save-slot notes from `docs/PLAYING.md`
+- [x] **2.3.4** Include Easy Controls / Sprint toggle pointers
+- [x] **2.3.5** “Copy build output path” after successful build
 
 ### 2.4 Contextual UX (light)
 
-- [ ] **2.4.1** Tooltips on editor tools that confuse people (3D tile, warp, checkpoint, budget limits)
-- [ ] **2.4.2** Asset panel: warn if soundtrack missing before Build
-- [ ] **2.4.3** CIA build: warn if bannertool/makerom missing with link to Help
-- [ ] **2.4.4** Build log: human one-liner on failure (e.g. “MSYS2 bash not found”) above raw make output
+- [x] **2.4.1** Tooltips on editor tools that confuse people (3D tile, warp, checkpoint, budget limits)
+- [x] **2.4.2** Asset panel: warn if soundtrack missing before Build
+- [x] **2.4.3** CIA build: warn if bannertool/makerom missing with link to Help
+- [x] **2.4.4** Build log: human one-liner on failure (e.g. “MSYS2 bash not found”) above raw make output
 
 ### 2.5 Sample project
 
-- [ ] **2.5.1** Decide: sample inside template defaults vs separate `samples/starter` zip
-- [ ] **2.5.2** Sample must build clean on Phase 1 toolchain resolution
-- [ ] **2.5.3** Sample includes short pre-level dialogue teaching move/jump only
-- [ ] **2.5.4** Early levels: advanced moves disabled (use existing per-level toggles)
+- [x] **2.5.1** Sample = fresh template defaults + starter levels (not a separate zip)
+- [x] **2.5.2** Sample must build clean on Phase 1 toolchain resolution
+- [x] **2.5.3** Sample includes short pre-level dialogue teaching move/jump only
+- [x] **2.5.4** Early levels: advanced moves disabled (use existing per-level toggles)
 
 ### 2.6 Accessibility / clarity (minimum)
 
-- [ ] **2.6.1** Critical buttons have visible labels (not icon-only)
-- [ ] **2.6.2** Error text contrast readable on dark/light UI as applicable
-- [ ] **2.6.3** Do not trap focus in wizard without Esc/Cancel
+- [x] **2.6.1** Critical buttons have visible labels (not icon-only)
+- [x] **2.6.2** Error text contrast readable on dark/light UI as applicable
+- [x] **2.6.3** Do not trap focus in wizard without Esc/Cancel
 
 ### 2.7 Dead UI cleanup
 
-- [ ] **2.7.1** Remove or hide buttons that do nothing
-- [ ] **2.7.2** Remove debug leftovers from welcome/settings if any
-- [ ] **2.7.3** Align menu copy with real behavior (no “Run in Citra” until implemented)
+- [x] **2.7.1** Remove or hide buttons that do nothing
+- [x] **2.7.2** Remove debug leftovers from welcome/settings if any
+- [x] **2.7.3** Align menu copy with real behavior (build + 3dslink only; no emulator launch)
 
-### 2.8 Optional: Citra launch
+### 2.8 Playing on hardware (docs in Help)
 
-- [ ] **2.8.1** If time: detect Citra install; “Open in Citra” after build
-- [ ] **2.8.2** If deferred: Problem log + Help says “File → Load ROM” manually
+- [x] **2.8.1** Help links to SD copy, FTP, and 3dslink steps (`docs/PLAYING.md`)
+- [x] **2.8.2** Do **not** add emulator detect/launch features
 
 ---
 
 ## Acceptance criteria
 
 - Fresh user mental model: edit without toolchain; build only after wizard succeeds
-- Help covers Citra audio + saves without needing Discord
+- Help covers hardware install (SD / FTP / 3dslink) + `dspfirm` / saves without needing Discord
 - No hardcoded personal project path on welcome
 - Sample or template teaches basic controls via dialogue/toggles
 
@@ -105,7 +105,8 @@ A person who can install apps but not debug toolchains can create a project, und
 
 | ID | Date | Task | Problem | Status | Resolution |
 |----|------|------|---------|--------|------------|
-| P2-001 | | | | open | |
+| P2-001 | 2026-08-25 | 2.1 | Browse path ignored when `C:\devkitPro` still usable | closed | Config path always preferred when set |
+| P2-002 | 2026-08-25 | 2.2 | Help/Setup overlays behind welcome (z-index) | closed | Modal z-index above welcome |
 
 ---
 
@@ -113,16 +114,18 @@ A person who can install apps but not debug toolchains can create a project, und
 
 | Date | Decision | Why |
 |------|----------|-----|
-| | Wizard blocking vs advisory | |
-| | Sample location | |
-| | Citra launch now or defer | |
-| | Help format (HTML vs MD render) | |
+| 2026-08-25 | Wizard is **advisory** (never blocks edit) | Matches 2.1.5; build can still prompt |
+| 2026-08-25 | Sample = template + starter levels in library | Already shipped in Phase 1 |
+| 2026-08-25 | No emulator launch in Studio | Builds + install docs only |
+| 2026-08-25 | Help = in-app HTML panel (static sections) | No MD renderer dependency yet |
+| 2026-08-25 | External links only via allowlisted https opener | Phase 2 legal table |
+| 2026-08-25 | Saved DEVKITPRO path wins even if invalid | Wizard can show bad picks; Retest turns red |
 
 ---
 
 ## Exit checklist
 
-- [ ] Manual dry-run: uninstall toolchain path temporarily → wizard recovers
-- [ ] Dry-run: new user opens Help and finds Citra audio steps in under one minute
-- [ ] Problem log: no open blockers
-- [ ] Ready for Phase 3
+- [x] Manual dry-run: uninstall toolchain path temporarily → wizard recovers
+- [x] Dry-run: new user opens Help and finds 3DS install / audio steps in under one minute
+- [x] Problem log: no open blockers
+- [x] Ready for Phase 3
