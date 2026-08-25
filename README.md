@@ -1,53 +1,82 @@
 # 3DS Studio
 
-Windows editor for making homebrew **Nintendo 3DS** platformers.
+**A Windows editor for homebrew Nintendo 3DS platformers — paint levels, import art, build real `.3dsx` / `.cia` packages for your console.**
 
-Paint levels, import art and music, then build `.3dsx` or `.cia` packages for a real CFW console. Studio does **not** emulate or play games on the PC — you transfer builds to your 3DS.
+Plan worlds on the PC, tune physics with sliders, swap in your own PNGs and MP3s, then compile with devkitPro and run the result on hardware you own. No Nintendo SDK, no emulator bundled, no subscription.
 
-**Not affiliated with Nintendo.** [Legal](docs/LEGAL.md) · [Privacy](docs/PRIVACY.md) · [Security](docs/SECURITY.md)
+`Windows` · `MIT` · `Tauri` · `devkitPro` · `No tracking`
 
-## Download
+**[Download v0.1.0 (Windows installer)](https://github.com/jackrbaca1/3DS-Studio/releases/latest)**
 
-**[3DS Studio v0.1.0 — Windows installer](https://github.com/jackrbaca1/3DS-Studio/releases/latest)**
+Unofficial homebrew tooling. **Not affiliated with Nintendo.** [Legal](docs/LEGAL.md) · [Privacy](docs/PRIVACY.md) · [Security](docs/SECURITY.md)
 
-1. Run the `.exe` setup (per-user install).
-2. If Windows SmartScreen appears: **More info → Run anyway** (the build is unsigned).
-3. Open **3DS Studio** from the Start Menu.
+---
 
-Needs Windows 10/11 x64 and WebView2 (usually already installed).
+## Why
 
-To **compile** games inside Studio you also need [devkitPro](https://devkitpro.org/) with `devkitARM` (not bundled). Use **Setup tools…** in the app if the toolchain isn’t found.
+Most game tools either never leave the PC or hide the console pipeline. 3DS Studio sits in the middle: **a visual editor for creators**, **a normal devkitPro project for developers**. You get a level painter and asset importer; the template still builds with `make` when you're ready to ship.
 
-## What it does
+---
 
-- Create and manage projects under `Documents\3DSStudio`
-- Edit tiles, enemies, spawns, warps, dialogue, and physics
-- Import graphics and an optional soundtrack
-- **Build 3dsx**, optional **Build CIA**, send over LAN with **3dslink**
-- Built-in **Help** and toolchain setup wizard
+## Features
 
-## Playing on a 3DS
+**Projects** — example game, new project wizard, library under `Documents\3DSStudio`, rename/delete, save & save-as
 
-Copy the built `.3dsx` (or install a `.cia`) to your console — SD card, FTP, or 3dslink. Details: [Playing on hardware](docs/PLAYING.md).
+**Level editor** — tiles, crackers, enemies, spawns, checkpoints, warps, 3D props, moving platforms, crumble tiles, level budget, worlds & secrets, per-level moves (double jump, wall jump, dash, ground pound), global & level physics, dialogue
+
+**Assets** — guided PNG/MP3 import with size hints; starter tileset + labeled placeholders
+
+**Build** — Setup tools wizard, Build 3dsx, Build CIA, 3dslink over LAN, streamed build console, clean
+
+**Help** — in-app guide plus [user docs](docs/USER_GUIDE.md) for playing on SD/FTP, audio (`dspfirm`), saves, CIA tools
+
+---
+
+## Quick start
+
+1. Download the installer from **[Releases](https://github.com/jackrbaca1/3DS-Studio/releases/latest)**.
+2. Run setup. If SmartScreen warns: **More info → Run anyway** (unsigned build).
+3. Open **3DS Studio** → **Start Fresh Example**.
+4. Edit a level. When ready for hardware: install [devkitPro](https://devkitpro.org/), use **Setup tools…**, then **Build 3dsx**.
+5. Copy to your 3DS SD card or use **3dslink**. [Playing guide](docs/PLAYING.md)
+
+---
+
+## Requirements
+
+| Task | Need |
+|------|------|
+| Run Studio | Windows 10/11 x64, WebView2 |
+| Compile | [devkitPro](https://devkitpro.org/) + devkitARM (not bundled) |
+| Play | CFW 3DS, SD / FTP / 3dslink |
+
+---
 
 ## Docs
 
 | | |
 |--|--|
 | [User guide](docs/USER_GUIDE.md) | Projects, editor, assets, build |
-| [Toolchain](docs/TOOLCHAIN.md) | Installing / pointing at devkitPro |
-| [Troubleshooting](docs/TROUBLESHOOTING.md) | SmartScreen, paths, silent audio |
-| [Changelog](CHANGELOG.md) | What’s new |
+| [Toolchain](docs/TOOLCHAIN.md) | devkitPro, CIA tools |
+| [Playing on 3DS](docs/PLAYING.md) | SD, FTP, 3dslink, audio, saves |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | SmartScreen, paths, build errors |
+| [Changelog](CHANGELOG.md) | Version history |
 
-## Building from source
+---
+
+## Build from source
 
 ```powershell
 npm install
 npm run dev
 ```
 
-Release packaging: `npm run tauri:build` then `npm run release:package`. Windows notes: [PLATFORM.md](docs/PLATFORM.md).
+Release packaging: `npm run tauri:build` then `npm run release:package`. See [PLATFORM.md](docs/PLATFORM.md).
 
-## License
+---
 
-MIT — [LICENSE](LICENSE) · [THIRD_PARTY.md](THIRD_PARTY.md)
+## About
+
+Created by **[Jack Baca](https://github.com/jackrbaca1)**. MIT — [LICENSE](LICENSE) · [THIRD_PARTY.md](THIRD_PARTY.md)
+
+Issues and feedback: [GitHub Issues](https://github.com/jackrbaca1/3DS-Studio/issues)
