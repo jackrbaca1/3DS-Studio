@@ -106,7 +106,7 @@ Channels:
 | ID | Date | Task | Problem | Status | Resolution |
 |----|------|------|---------|--------|------------|
 | P5-001 | 2026-08-25 | 5.2 | `gh` CLI not installed; use GitHub Desktop / web UI | open | Steps in LAUNCH_CHECKLIST.md |
-| P5-002 | 2026-08-25 | 5.2 | `dist/release/v0.1.0/` may be missing locally | open | Re-run `npm run tauri:build` + `npm run release:package` |
+| P5-002 | 2026-08-25 | 5.2 | `dist/release/v0.1.0/` may be missing locally | fixed | Rebuilt with `tauri:build` + `release:package` |
 
 ---
 
