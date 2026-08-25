@@ -9,6 +9,7 @@ import {
   hideCopyBuildPathButton,
   prependBuildOneLiner,
 } from "./phase2-ux.js";
+import { studioConfirm, bindStudioConfirmUi } from "./studio-dialogs.js";
 import {
   setAutoSaveCallback,
   setProjectData,
@@ -282,16 +283,19 @@ async function saveProject() {
   }
 }
 
-let nameProjectMode = null; // "save-as" | "new"
+let nameProjectMode = null; // "save-as" | "new" | "rename"
+let renameTargetPath = null;
 
 function showNameProjectModal(mode, defaults = {}) {
   nameProjectMode = mode;
+  renameTargetPath = defaults.path || null;
   const overlay = document.getElementById("name-project-overlay");
   const title = document.getElementById("name-project-title");
   const hint = document.getElementById("name-project-hint");
   const input = document.getElementById("name-project-input");
   const confirm = document.getElementById("name-project-confirm");
   const overwrite = document.getElementById("name-project-overwrite");
+  const overwriteRow = document.getElementById("name-project-overwrite-row");
   if (!overlay || !input) return;
 
   if (mode === "save-as") {
@@ -300,12 +304,21 @@ function showNameProjectModal(mode, defaults = {}) {
       "Creates a named copy in Documents/3DSStudio. Use a name without spaces (e.g. MyPlatformer).";
     confirm.textContent = "Save As";
     input.value = (defaults.name || projectLabel() || "MyPlatformer").replace(/\s+/g, "");
+    if (overwriteRow) overwriteRow.classList.remove("hidden");
+  } else if (mode === "rename") {
+    title.textContent = "Rename Project";
+    hint.textContent =
+      "Renames the folder under Documents/3DSStudio. Name cannot contain spaces.";
+    confirm.textContent = "Rename";
+    input.value = defaults.name || "MyPlatformer";
+    if (overwriteRow) overwriteRow.classList.add("hidden");
   } else {
     title.textContent = "New Project";
     hint.textContent =
       "Creates a fresh starter in Documents/3DSStudio. Name cannot contain spaces.";
     confirm.textContent = "Create";
     input.value = defaults.name || "MyPlatformer";
+    if (overwriteRow) overwriteRow.classList.remove("hidden");
   }
   if (overwrite) overwrite.checked = false;
   overlay.classList.remove("hidden");
@@ -316,6 +329,7 @@ function showNameProjectModal(mode, defaults = {}) {
 function hideNameProjectModal() {
   document.getElementById("name-project-overlay")?.classList.add("hidden");
   nameProjectMode = null;
+  renameTargetPath = null;
 }
 
 async function confirmNameProjectModal() {
@@ -328,12 +342,15 @@ async function confirmNameProjectModal() {
   }
 
   const mode = nameProjectMode;
+  const renamePath = renameTargetPath;
   hideNameProjectModal();
 
   if (mode === "save-as") {
     await saveProjectAs(name, overwrite);
   } else if (mode === "new") {
     await createNamedNewProject(name, overwrite);
+  } else if (mode === "rename" && renamePath) {
+    await applyRenameLibraryProject(renamePath, name);
   }
 }
 
@@ -355,7 +372,12 @@ async function saveProjectAs(name, overwrite = false) {
   } catch (err) {
     const msg = err?.message || String(err);
     if (/already exists/i.test(msg) && !overwrite) {
-      const ok = confirm(`${msg}\n\nOverwrite it?`);
+      const ok = await studioConfirm({
+        title: "Overwrite project?",
+        message: `${msg}\n\nOverwrite it?`,
+        confirmLabel: "Overwrite",
+        danger: true,
+      });
       if (ok) await saveProjectAs(name, true);
       else alert(msg);
       return;
@@ -380,7 +402,12 @@ async function createNamedNewProject(name, overwrite = false) {
   } catch (err) {
     const msg = err?.message || String(err);
     if (/already exists/i.test(msg) && !overwrite) {
-      const ok = confirm(`${msg}\n\nOverwrite it?`);
+      const ok = await studioConfirm({
+        title: "Overwrite project?",
+        message: `${msg}\n\nOverwrite it?`,
+        confirmLabel: "Overwrite",
+        danger: true,
+      });
       if (ok) await createNamedNewProject(name, true);
       else alert(msg);
       return;
@@ -712,6 +739,9 @@ async function renderWelcomeRecent() {
   }
 
   for (const proj of projects.slice(0, 24)) {
+    const row = document.createElement("div");
+    row.className = "welcome-recent-row";
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "welcome-recent-item";
@@ -739,7 +769,114 @@ async function renderWelcomeRecent() {
         renderWelcomeRecent().catch(() => {});
       }
     });
-    listEl.appendChild(btn);
+
+    const actions = document.createElement("div");
+    actions.className = "welcome-recent-actions";
+
+    const renameBtn = document.createElement("button");
+    renameBtn.type = "button";
+    renameBtn.className = "welcome-recent-action";
+    renameBtn.textContent = "Rename";
+    renameBtn.title = "Rename this project folder";
+    renameBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      renameLibraryProject(proj).catch((err) => {
+        console.error(err);
+        alert(err?.message || String(err));
+      });
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "welcome-recent-action danger";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.title = "Delete this project from disk";
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteLibraryProject(proj).catch((err) => {
+        console.error(err);
+        alert(err?.message || String(err));
+      });
+    });
+
+    actions.appendChild(renameBtn);
+    actions.appendChild(deleteBtn);
+    row.appendChild(btn);
+    row.appendChild(actions);
+    listEl.appendChild(row);
+  }
+}
+
+async function renameLibraryProject(proj) {
+  showNameProjectModal("rename", {
+    name: proj.name || projectDisplayName(proj.path),
+    path: proj.path,
+  });
+}
+
+async function applyRenameLibraryProject(oldPath, name) {
+  setWelcomeStatus("Renaming…");
+  try {
+    const result = await invoke("rename_studio_project", {
+      projectPath: oldPath,
+      newName: name,
+    });
+    forgetRecent(oldPath);
+    if (result?.path) rememberRecent(result.path);
+    if (projectPath && pathsEqual(projectPath, oldPath)) {
+      projectPath = result.path;
+      document.getElementById("project-name-display").textContent = result.name || name;
+    }
+    await renderWelcomeRecent();
+    setWelcomeStatus(`Renamed to ${result.name || name}`);
+  } catch (err) {
+    const msg = err?.message || String(err);
+    showWelcomeError(msg);
+    alert(msg);
+  } finally {
+    checkToolchain();
+  }
+}
+
+async function deleteLibraryProject(proj) {
+  const ok = await studioConfirm({
+    title: "Delete project?",
+    message: `Delete project "${proj.name}" permanently?\n\nThis removes the folder from disk:\n${proj.path}\n\nThis cannot be undone.`,
+    confirmLabel: "Delete",
+    danger: true,
+  });
+  if (!ok) return;
+
+  setWelcomeStatus("Deleting…");
+  try {
+    await invoke("delete_studio_project", { projectPath: proj.path });
+    forgetRecent(proj.path);
+    if (projectPath && pathsEqual(projectPath, proj.path)) {
+      projectPath = null;
+      document.getElementById("project-name-display").textContent = "";
+    }
+    await renderWelcomeRecent();
+    setWelcomeStatus(`Deleted ${proj.name}`);
+  } catch (err) {
+    const msg = err?.message || String(err);
+    showWelcomeError(msg);
+    alert(msg);
+  } finally {
+    checkToolchain();
+  }
+}
+
+function pathsEqual(a, b) {
+  return String(a || "").replace(/\\/g, "/").toLowerCase() ===
+    String(b || "").replace(/\\/g, "/").toLowerCase();
+}
+
+function forgetRecent(path) {
+  try {
+    const next = getRecentProjects().filter((p) => !pathsEqual(p, path));
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
   }
 }
 
@@ -1065,6 +1202,9 @@ function bindTopBar() {
     }
     if (e.key === "Escape") hideNameProjectModal();
   });
+
+  bindStudioConfirmUi();
+
   document.getElementById("btn-open-folder")?.addEventListener("click", () => {
     if (projectPath) invoke("open_project_folder", { projectPath });
   });
@@ -1085,13 +1225,14 @@ function bindTopBar() {
 
   document.getElementById("btn-reimport-cpp")?.addEventListener("click", async () => {
     if (!projectPath) return;
-    if (
-      !confirm(
-        "Replace all levels from source/main.cpp? Includes menu BG and per-level dialogue. Unsaved editor changes will be lost."
-      )
-    ) {
-      return;
-    }
+    const ok = await studioConfirm({
+      title: "Reload from C++?",
+      message:
+        "Replace all levels from source/main.cpp? Includes menu BG and per-level dialogue. Unsaved editor changes will be lost.",
+      confirmLabel: "Reload",
+      danger: true,
+    });
+    if (!ok) return;
     await importLevelsFromMainCpp();
     buildLevelTabs();
     initEditorCanvas();

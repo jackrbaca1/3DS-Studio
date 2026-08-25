@@ -1,6 +1,6 @@
 # Playing your builds (3DS hardware)
 
-3DS Studio builds **`.3dsx`** and optional **`.cia`** packages. It does not launch emulators. Copy the output to a CFW 3DS (or into an emulator yourself if you prefer).
+3DS Studio builds **`.3dsx`** and optional **`.cia`** packages. It does not launch or recommend emulators. Copy the output to a CFW 3DS.
 
 Unofficial homebrew. Not affiliated with Nintendo. Installing CFW has risks — your choice and responsibility. See [LEGAL.md](LEGAL.md).
 
@@ -8,11 +8,11 @@ Unofficial homebrew. Not affiliated with Nintendo. Installing CFW has risks — 
 
 | Format | How you get it | Typical use |
 |--------|----------------|-------------|
-| `.3dsx` | **Build** | Homebrew Launcher, or send with **3dslink** |
+| `.3dsx` | **Build 3dsx** | Homebrew Launcher, or send with **3dslink** |
 | `.cia` | **Build CIA** (needs `makerom` + `bannertool`) | Install with FBI, then launch from Home Menu |
 
 Outputs land in the **project root** (same folder as the `Makefile`) — for example `Documents/3DSStudio/MyGame/MyGame.3dsx`.  
-The `build/` subfolder only holds intermediate `.o` / `.h` files; it is not where you pick up the playable ROM. Use **📁** in Studio to open the project root.
+The `build/` subfolder only holds intermediate `.o` / `.h` files; it is not where you pick up the playable ROM. Use **Folder** in Studio to open the project root.
 
 ---
 
@@ -50,7 +50,7 @@ Fast iterate loop for Homebrew Launcher apps (not CIA install).
 
 1. 3DS and PC on the **same LAN**.
 2. On the 3DS: open **Homebrew Launcher** → press **Y** to show the console IP.
-3. In Studio: **Build** first, then **3dslink** → enter that IP → Connect.
+3. In Studio: **Build 3dsx** first, then **3dslink** → enter that IP → Connect.
 4. The `.3dsx` is sent and should start on the console.
 
 Requires `3dslink` from the devkitPro 3DS tools package. IP is local-only; nothing is uploaded to the cloud.
@@ -63,9 +63,9 @@ NDSP (SFX / music) needs DSP firmware on the SD:
 
 `sdmc:/3ds/dspfirm.cdc`
 
-Dump it on your console: **Luma Rosalina** → **Miscellaneous** → **Dump DSP firmware**, then copy that file to `sdmc:/3ds/`.
+Dump it on **your** console: **Luma Rosalina** → **Miscellaneous** → **Dump DSP firmware**, then copy that file to `sdmc:/3ds/`.
 
-Do **not** redistribute dumped firmware in this repo or releases.
+Do **not** redistribute dumped firmware in this repo or releases. Do not download random “dspfirm” mirrors.
 
 Music is optional: import an MP3 you have rights to under Assets → Soundtrack, then rebuild. If missing, the game skips music; SFX still work when `dspfirm.cdc` is present.
 
@@ -84,12 +84,17 @@ Ensure `sdmc:/3ds` exists (the game also tries to create it).
 
 ---
 
-## Emulators (optional, unsupported)
+## Emulators (unsupported)
 
-You can load the same `.3dsx` / `.cia` in a PC emulator if you want. Studio does not install, detect, or launch emulators. Audio/save layout on an emulator’s virtual SD is up to that emulator; for hardware audio see `dspfirm.cdc` above.
+You may load the same `.3dsx` / `.cia` in a PC emulator if you choose. Studio does not install, detect, recommend, or launch emulators. Prefer hardware for audio/`dspfirm` and save layout.
 
 ---
 
-## Controls note
+## Controls (in-game Settings)
 
-In-game Settings: **Controls** NORMAL/EASY, **Sprint Mode** TOGGLE/HOLD.
+| Setting | Options |
+|---------|---------|
+| Controls | NORMAL / EASY |
+| Sprint Mode | TOGGLE / HOLD |
+
+The Studio starter sample teaches move + jump in dialogue and keeps advanced moves off until you enable them per level.

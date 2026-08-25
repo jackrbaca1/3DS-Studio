@@ -36,6 +36,6 @@ If the repo lives under OneDrive (or another synced folder), Cargo may fail to w
 
 `CARGO_TARGET_DIR=%LOCALAPPDATA%\3ds-studio-cargo-target`
 
-## Privacy note (Phase 0)
+## Privacy
 
-Studio source has **no** analytics, crash-upload, or update-check endpoints. Local file I/O and optional LAN `3dslink` only. Formal `docs/PRIVACY.md` is Phase 4.
+Studio has **no** analytics, crash-upload, or update-check endpoints. Local file I/O, optional LAN `3dslink`, and allowlisted https help links only. See [PRIVACY.md](PRIVACY.md).

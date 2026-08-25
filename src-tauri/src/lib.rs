@@ -292,6 +292,78 @@ fn list_studio_projects(app: AppHandle) -> Result<Vec<StudioProjectEntry>, Strin
     Ok(entries)
 }
 
+fn ensure_path_under_studio_library(app: &AppHandle, path: &Path) -> Result<(), String> {
+    let canonical = path
+        .canonicalize()
+        .map_err(|e| format!("Could not resolve project path: {e}"))?;
+
+    let mut allowed: Vec<PathBuf> = Vec::new();
+    let primary = studio_library_dir(app)?;
+    allowed.push(
+        primary
+            .canonicalize()
+            .unwrap_or(primary),
+    );
+    if let Ok(docs) = app.path().document_dir() {
+        let legacy = docs.join("3DS Studio");
+        if let Ok(c) = legacy.canonicalize() {
+            allowed.push(c);
+        }
+    }
+    let under = allowed.iter().any(|root| canonical.starts_with(root));
+    if !under {
+        return Err(
+            "Only projects under Documents/3DSStudio can be renamed or deleted from Studio."
+                .into(),
+        );
+    }
+    Ok(())
+}
+
+/// Rename a library project folder (Documents/3DSStudio only).
+#[tauri::command]
+fn rename_studio_project(
+    app: AppHandle,
+    project_path: String,
+    new_name: String,
+) -> Result<serde_json::Value, String> {
+    let src = toolchain::validate_project_path(&project_path)?;
+    if !project::inspect(&src).valid {
+        return Err("That folder is not a valid Studio project.".into());
+    }
+    ensure_path_under_studio_library(&app, &src)?;
+
+    let project_name = sanitize_project_name(&new_name)?;
+    let parent = src
+        .parent()
+        .ok_or_else(|| "Invalid project path.".to_string())?;
+    let dest = parent.join(&project_name);
+    if dest.exists() {
+        return Err(format!(
+            "A project named \"{project_name}\" already exists. Choose another name."
+        ));
+    }
+
+    fs::rename(&src, &dest).map_err(|e| format!("Could not rename project: {e}"))?;
+    Ok(serde_json::json!({
+        "path": dest.to_string_lossy(),
+        "name": project_name,
+        "old_path": src.to_string_lossy(),
+    }))
+}
+
+/// Permanently delete a library project folder (Documents/3DSStudio only).
+#[tauri::command]
+fn delete_studio_project(app: AppHandle, project_path: String) -> Result<(), String> {
+    let src = toolchain::validate_project_path(&project_path)?;
+    if !project::inspect(&src).valid {
+        return Err("That folder is not a valid Studio project.".into());
+    }
+    ensure_path_under_studio_library(&app, &src)?;
+    fs::remove_dir_all(&src).map_err(|e| format!("Could not delete project: {e}"))?;
+    Ok(())
+}
+
 /// Copy the open project into Documents/3DS Studio/<name> (creative-software Save As).
 #[tauri::command]
 fn save_project_as(
@@ -1256,6 +1328,8 @@ pub fn run() {
             create_project,
             ensure_example_project,
             list_studio_projects,
+            rename_studio_project,
+            delete_studio_project,
             save_project_as,
             create_named_project,
             save_config,

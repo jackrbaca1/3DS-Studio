@@ -1,6 +1,7 @@
 /** Phase 2: toolchain wizard, Help panel, contextual build UX. */
 
 import { HELP_SECTIONS } from "./help-content.js";
+import { studioConfirm } from "./studio-dialogs.js";
 
 const WIZARD_AUTO_KEY = "studio-wizard-auto-shown";
 const DEVKITPRO_DOCS = "https://devkitpro.org/wiki/Getting_Started";
@@ -383,9 +384,11 @@ export async function confirmBuildPreconditions(buildKind, projectPath) {
   }
 
   if (report && !report.ok) {
-    const openSetup = confirm(
-      `${report.message}\n\nOK = open Setup tools…\nCancel = try build anyway`
-    );
+    const openSetup = await studioConfirm({
+      title: "Build tools missing",
+      message: `${report.message}\n\nOpen Setup tools…?\n(Cancel = try build anyway)`,
+      confirmLabel: "Setup tools…",
+    });
     if (openSetup) {
       await showWizard(report);
       return false;
@@ -393,9 +396,12 @@ export async function confirmBuildPreconditions(buildKind, projectPath) {
   }
 
   if (buildKind === "cia" && report && (!report.makerom || !report.bannertool)) {
-    const go = confirm(
-      "makerom and/or bannertool look missing. CIA build will likely fail.\n\nOK = try anyway · Cancel = open Help"
-    );
+    const go = await studioConfirm({
+      title: "CIA tools missing?",
+      message:
+        "makerom and/or bannertool look missing. CIA build will likely fail.\n\nOK = try anyway · Cancel = open Help",
+      confirmLabel: "Try anyway",
+    });
     if (!go) {
       showHelp("cia");
       return false;
@@ -407,9 +413,12 @@ export async function confirmBuildPreconditions(buildKind, projectPath) {
       const status = await invokeFn("get_asset_status", { projectPath });
       const track = status?.soundtrack;
       if (track && !track.exists) {
-        const go = confirm(
-          "No soundtrack MP3 imported yet. Build will continue without music.\n\nOK = build anyway · Cancel = stay here"
-        );
+        const go = await studioConfirm({
+          title: "No soundtrack",
+          message:
+            "No soundtrack MP3 imported yet. Build will continue without music.\n\nOK = build anyway · Cancel = stay here",
+          confirmLabel: "Build anyway",
+        });
         if (!go) return false;
       }
     } catch {

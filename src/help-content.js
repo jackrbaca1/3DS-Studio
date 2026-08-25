@@ -1,4 +1,4 @@
-/** In-app Help sections for Phase 2 (mirrors docs/PLAYING.md + editor basics). */
+/** In-app Help — keep aligned with docs/USER_GUIDE.md, PLAYING.md, TROUBLESHOOTING.md. */
 
 export const HELP_SECTIONS = [
   {
@@ -9,7 +9,9 @@ export const HELP_SECTIONS = [
       <ul>
         <li><strong>Save</strong> writes levels to <code>studio_project.json</code> and syncs into <code>source/main.cpp</code>.</li>
         <li><strong>Save As…</strong> copies the whole project under <code>Documents/3DSStudio/</code> (no spaces in the name).</li>
-        <li><strong>Projects</strong> returns to the project list without quitting Studio.</li>
+        <li><strong>Projects</strong> list: open a project, or use <strong>Rename</strong> / <strong>Delete</strong> on that row (library folders only).</li>
+        <li><strong>Projects</strong> (top bar) returns to the project list without quitting Studio.</li>
+        <li><strong>Folder</strong> opens the project root in Explorer (where <code>.3dsx</code> / <code>.cia</code> appear after Build).</li>
       </ul>
     `,
   },
@@ -29,7 +31,7 @@ export const HELP_SECTIONS = [
     id: "build",
     title: "Build",
     html: `
-      <p>Studio can always edit. Building needs <strong>devkitPro</strong> on Windows.</p>
+      <p>Studio can always edit. Building needs <strong>devkitPro</strong> on Windows (not bundled).</p>
       <ul>
         <li><strong>Build 3dsx</strong> → playable Homebrew Launcher app in the project root (next to the Makefile, not inside <code>build/</code>).</li>
         <li><strong>Build CIA</strong> → installable package (needs <code>makerom</code> + <code>bannertool</code>).</li>
@@ -42,7 +44,7 @@ export const HELP_SECTIONS = [
     id: "playing",
     title: "Playing on 3DS",
     html: `
-      <p>Studio only builds packages. You copy them to a CFW 3DS. Installing CFW has risks (bricking, warranty) — your choice.</p>
+      <p>Studio only builds packages. You copy them to a CFW 3DS. Installing CFW has risks (bricking, warranty) — your choice. Studio does not launch emulators.</p>
       <h4>SD card</h4>
       <ol>
         <li>Build <code>.3dsx</code> and/or <code>.cia</code>.</li>
@@ -61,8 +63,8 @@ export const HELP_SECTIONS = [
     html: `
       <p>SFX and music need DSP firmware on the SD:</p>
       <p><code>sdmc:/3ds/dspfirm.cdc</code></p>
-      <p>Dump it on your console: Luma Rosalina → Miscellaneous → Dump DSP firmware, then copy to that path.</p>
-      <p><strong>Do not</strong> redistribute dumped firmware. Without it, audio is usually silent.</p>
+      <p>Dump it on <strong>your</strong> console: Luma Rosalina → Miscellaneous → Dump DSP firmware, then copy to that path.</p>
+      <p><strong>Do not</strong> redistribute dumped firmware or download random mirrors. Without it, audio is usually silent.</p>
     `,
   },
   {
@@ -106,10 +108,12 @@ export const HELP_SECTIONS = [
     title: "Troubleshooting",
     html: `
       <ul>
+        <li><strong>SmartScreen on install</strong> — unsigned build: More info → Run anyway.</li>
         <li><strong>Build says bash / DEVKITPRO missing</strong> — Setup tools… and point at <code>C:\\devkitPro</code>. Ignore Unix env values like <code>/opt/devkitpro</code>.</li>
         <li><strong>No rule for sprites.t3x</strong> — project path must have <strong>no spaces</strong> (<code>Documents/3DSStudio/MyGame</code>).</li>
         <li><strong>Cannot write game_config.h</strong> — folder missing <code>source/</code> (OneDrive emptied it). Re-open or Start Fresh Example.</li>
-        <li><strong>Looking for .3dsx in build/</strong> — go up one level; outputs sit next to the Makefile.</li>
+        <li><strong>Looking for .3dsx in build/</strong> — use <strong>Folder</strong>; outputs sit next to the Makefile.</li>
+        <li><strong>Silent audio on 3DS</strong> — dump <code>dspfirm.cdc</code> to <code>sdmc:/3ds/</code> (do not download random dumps).</li>
       </ul>
     `,
   },

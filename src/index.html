@@ -602,20 +602,32 @@
   </div>
 </div>
 
-<!-- ═══ Save As / New Project name Modal ═══ -->
+<!-- ═══ Save As / New Project / Rename name Modal ═══ -->
 <div id="name-project-overlay" class="hidden modal-overlay">
   <div class="threedslink-dialog">
     <h3 id="name-project-title">Save As</h3>
     <p class="threedslink-hint" id="name-project-hint">Saved projects live in Documents/3DSStudio under this name (no spaces).</p>
     <label class="threedslink-label" for="name-project-input">Project name</label>
     <input type="text" id="name-project-input" placeholder="MyPlatformer" autocomplete="off" spellcheck="false" maxlength="64" />
-    <label class="name-project-overwrite">
+    <label class="name-project-overwrite" id="name-project-overwrite-row">
       <input type="checkbox" id="name-project-overwrite" />
       Overwrite if that name already exists
     </label>
     <div class="threedslink-actions">
       <button type="button" class="topbar-btn" id="name-project-cancel">Cancel</button>
       <button type="button" class="topbar-btn success" id="name-project-confirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ In-app confirm (Tauri blocks window.confirm) ═══ -->
+<div id="confirm-action-overlay" class="hidden modal-overlay" role="dialog" aria-modal="true">
+  <div class="threedslink-dialog">
+    <h3 id="confirm-action-title">Confirm</h3>
+    <p class="threedslink-hint" id="confirm-action-message" style="white-space:pre-wrap;"></p>
+    <div class="threedslink-actions">
+      <button type="button" class="topbar-btn" id="confirm-action-cancel">Cancel</button>
+      <button type="button" class="topbar-btn danger" id="confirm-action-ok">OK</button>
     </div>
   </div>
 </div>

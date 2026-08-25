@@ -1,0 +1,45 @@
+name: Toolchain / build
+description: Build 3dsx/CIA or Setup tools problems
+title: "[toolchain] "
+labels: ["toolchain"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [docs/TOOLCHAIN.md](../../docs/TOOLCHAIN.md) and [docs/TROUBLESHOOTING.md](../../docs/TROUBLESHOOTING.md) first.
+        Do not request console exploits, piracy, or DSP firmware downloads here.
+  - type: input
+    id: version
+    attributes:
+      label: Studio version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: devkit
+    attributes:
+      label: DEVKITPRO path Studio reports
+      placeholder: "C:\\devkitPro"
+    validations:
+      required: true
+  - type: checkboxes
+    id: tools
+    attributes:
+      label: What fails?
+      options:
+        - label: Setup tools / detection
+        - label: Build 3dsx
+        - label: Build CIA
+        - label: 3dslink
+  - type: textarea
+    id: message
+    attributes:
+      label: Exact error / Build Console excerpt
+    validations:
+      required: true
+  - type: input
+    id: project_path
+    attributes:
+      label: Project path pattern
+      description: e.g. Documents/3DSStudio/MyGame — confirm no spaces
+      placeholder: "Documents/3DSStudio/MyGame"

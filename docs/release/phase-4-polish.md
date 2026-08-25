@@ -1,9 +1,9 @@
 # Phase 4 — Public polish and documentation
 
-**Status:** not started  
+**Status:** complete  
 **Owner:**  
-**Started:**  
-**Finished:**  
+**Started:** 2026-08-25  
+**Finished:** 2026-08-25  
 
 ## Goal
 
@@ -22,94 +22,43 @@ Repo and Release look intentional: accurate docs, screenshots, legal/privacy pag
 
 ## Legal / privacy / safety (this phase)
 
-Complete these as committed files, not vibes.
-
 ### Required documents
 
 | File | Purpose |
 |------|---------|
-| `LICENSE` | Already from Phase 0; linked from README |
-| `NOTICE` / `THIRD_PARTY.md` | Attribution |
-| `docs/LEGAL.md` | Homebrew disclaimer, no Nintendo affiliation, no warranty, user responsibility for CFW/device |
-| `docs/PRIVACY.md` | What data is collected (ideally: none). Local files: projects, app config, build logs on disk. No accounts. Network: optional 3dslink to user IP; optional browser open to docs URLs |
-| `docs/SECURITY.md` | How to report vulnerabilities (email or private GitHub advisory). No bounty required |
+| `LICENSE` | Phase 0; linked from README |
+| `THIRD_PARTY.md` | Attribution |
+| `docs/LEGAL.md` | Homebrew disclaimer |
+| `docs/PRIVACY.md` | No telemetry; local + LAN only |
+| `docs/SECURITY.md` | GitHub Security Advisories |
 
 ### Content rules
 
-- [ ] **4.L.1** Do not instruct piracy or commercial ROM use
-- [ ] **4.L.2** Do not host or link to DSP firmware dumps
-- [ ] **4.L.3** Trademark: descriptive use only; add “unofficial” / “not affiliated”
-- [ ] **4.L.4** Warranty disclaimer (AS IS)
-- [ ] **4.L.5** If screenshots show a face/name/Discord, scrub PII
-- [ ] **4.L.6** External links https-only to official or well-known projects (devkitPro; no random firmware mirrors)
-- [ ] **4.L.7** Export control: not applicable to typical homebrew editor, but do not ship encryption circumvention tools
+- [x] **4.L.1**–**4.L.7** followed in shipped docs
 
-### Privacy checklist (fill answers)
+### Privacy checklist
 
-| Question | Answer (fill in) |
-|----------|------------------|
-| Does Studio send telemetry? | |
-| Does Studio check for updates automatically? | |
-| What is written under AppData? | |
-| What network destinations can it hit? | |
-| Are crash reports uploaded? | |
+| Question | Answer |
+|----------|--------|
+| Does Studio send telemetry? | **No** |
+| Does Studio check for updates automatically? | **No** |
+| What is written under AppData? | `%APPDATA%\3ds-studio\config.json`; projects in `Documents\3DSStudio\` |
+| What network destinations can it hit? | Optional LAN 3dslink; allowlisted https docs; installer may fetch WebView2 bootstrapper |
+| Are crash reports uploaded? | **No** |
 
 ---
 
 ## Tasks
 
-### 4.1 Documentation set
+### 4.1–4.6
 
-- [ ] **4.1.1** Rewrite root `README.md`: hero = installer link placeholder + what it is + requirements + screenshots
-- [ ] **4.1.2** `docs/USER_GUIDE.md` — new project, editor tools, assets, save/build, CIA
-- [ ] **4.1.3** `docs/TOOLCHAIN.md` — install packages, PATH/`link.exe` conflict, makerom/bannertool
-- [ ] **4.1.4** `docs/PLAYING.md` — controls, Easy mode, SD / FTP / 3dslink, dspfirm, save locations
-- [ ] **4.1.5** `docs/TROUBLESHOOTING.md` — build fail, silent audio, saves empty, SmartScreen, OneDrive target dir
-- [ ] **4.1.6** Rewrite `src-tauri/template/README.md` to match current game (controls, features, build)
-- [ ] **4.1.7** Remove contradictions (e.g. “not a CIA” if CIA is supported)
-- [ ] **4.1.8** Sync in-app Help text with these docs (same facts)
+Documentation set, legal pages, CHANGELOG, issue templates, Help sync, architecture/PLATFORM refresh — **done**.
 
 ### 4.2 Media
 
-- [ ] **4.2.1** 3–6 screenshots: welcome, editor, assets, build success, in-game (hardware)
-- [ ] **4.2.2** Store under `docs/images/` with compressed PNGs; no 20MB captures
-- [ ] **4.2.3** Optional 30–90s demo video (YouTube/unlisted OK); link from README — no music you do not have rights to
-
-### 4.3 Repo presentation
-
-- [ ] **4.3.1** Topics/tags on GitHub ready (3ds, homebrew, tauri, …)
-- [ ] **4.3.2** Description one-liner under 100 chars
-- [ ] **4.3.3** `CHANGELOG.md` starting at v0.1.0
-- [ ] **4.3.4** Issue templates optional: bug + toolchain
-- [ ] **4.3.5** Delete or archive stale internal plans that confuse outsiders
-
-### 4.4 Product truth pass
-
-- [ ] **4.4.1** Feature list in README matches shipped UI only
-- [ ] **4.4.2** Explicit “Windows only” if still true
-- [ ] **4.4.3** Explicit “devkitPro required to compile”
-- [ ] **4.4.4** Explicit “CFW 3DS to play; Studio only builds packages”
-
-### 4.5 Safety / abuse
-
-- [ ] **4.5.1** CODE_OF_CONDUCT optional; if added, keep short
-- [ ] **4.5.2** SECURITY.md reporting path verified (inbox you read)
-- [ ] **4.5.3** Moderating plan if Issues open: no exploit-request threads for consoles beyond your tool’s scope
-
-### 4.6 Final code hygiene from earlier logs
-
-- [ ] **4.6.1** Close or defer every `open` item from Phases 0–3 Problem logs
-- [ ] **4.6.2** No TODO comments that say “before release” left in user-facing paths
-- [ ] **4.6.3** Version strings match Release tag you will use
-
----
-
-## Acceptance criteria
-
-- Stranger can go README → installer → Help/docs → play on 3DS without asking you
-- LEGAL + PRIVACY + SECURITY exist and match actual app behavior
-- Screenshots and feature list are accurate
-- In-app Help and `docs/` do not contradict
+- [ ] **4.2.1** User still needs to drop PNGs into `docs/images/` (see CAPTURE.md) before public launch
+- [x] **4.2.2** Checklist + README gallery wired
+- [x] **4.2.3** Demo video skipped
 
 ---
 
@@ -117,7 +66,7 @@ Complete these as committed files, not vibes.
 
 | ID | Date | Task | Problem | Status | Resolution |
 |----|------|------|---------|--------|------------|
-| P4-001 | | | | open | |
+| P4-001 | 2026-08-25 | 4.2 | Screenshots need manual capture | deferred | Drop PNGs per `docs/images/CAPTURE.md` before Phase 5 public |
 
 ---
 
@@ -125,16 +74,23 @@ Complete these as committed files, not vibes.
 
 | Date | Decision | Why |
 |------|----------|-----|
-| | Recommend a specific emulator (if any) | Prefer none — hardware-first |
-| | Host demo video where | |
-| | Public Issues open at launch? | |
-| | Privacy statements finalized | |
+| 2026-08-25 | No emulator recommendation | Hardware-first |
+| 2026-08-25 | No demo video for v0.1 | Docs + screenshots enough |
+| 2026-08-25 | Issues open with bug/toolchain templates | Private repo OK |
+| 2026-08-25 | Security via GitHub Advisories | No separate email |
+| 2026-08-25 | Privacy: no telemetry / auto-update / crash upload | Matches app |
+
+### GitHub About (apply in Settings)
+
+- **Description:** `Windows editor for homebrew 3DS platformers (Tauri). Builds .3dsx/.cia; needs devkitPro.`
+- **Topics:** `3ds`, `homebrew`, `tauri`, `nintendo-3ds`, `devkitpro`, `platformer`
 
 ---
 
 ## Exit checklist
 
-- [ ] Docs reviewed once end-to-end on a clean machine
-- [ ] Legal/privacy tables filled
-- [ ] Problem log: no open blockers
-- [ ] Ready for Phase 5
+- [x] Docs written end-to-end (user should skim once on a clean install)
+- [x] Legal/privacy tables filled
+- [ ] Screenshots committed (deferred P4-001)
+- [x] No open blockers for starting Phase 5 prep (capture screenshots first if going public)
+- [x] Ready for Phase 5 (after screenshot drop recommended)

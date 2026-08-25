@@ -20,12 +20,13 @@ Unofficial homebrew tooling. **Not affiliated with, endorsed by, or related to N
 
 ## Homebrew and hardware
 
-Building and running `.3dsx` / `.cia` homebrew typically requires a user-owned console with custom firmware. Installing CFW has risks (bricking, warranty, policy). That is the user’s choice and responsibility. Emulators are optional third-party tools; 3DS Studio does not bundle or launch them.
+Building and running `.3dsx` / `.cia` homebrew typically requires a user-owned console with custom firmware. Installing CFW has risks (bricking, warranty, policy). That is the user’s choice and responsibility. Emulators are optional third-party tools; 3DS Studio does not bundle, recommend, or launch them.
 
 ## No warranty
 
 Software is provided **AS IS**, without warranty of any kind. See `LICENSE`.
 
-## Reporting IP concerns
+## Reporting concerns
 
-If you believe material in this repository infringes your rights, open a GitHub issue or use the contact method listed in `docs/SECURITY.md` once that file exists (Phase 4). Until then, use the repository owner’s GitHub profile contact.
+- **Security vulnerabilities:** [SECURITY.md](SECURITY.md) (GitHub Security Advisories).
+- **IP / rights concerns:** open a private advisory or contact the repository owner via their GitHub profile.

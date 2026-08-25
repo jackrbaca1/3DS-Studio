@@ -1,6 +1,6 @@
-﻿// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// Tile definitions â€” must match main.cpp
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+﻿import { studioConfirm } from "./studio-dialogs.js";
+
+// Tile definitions — must match main.cpp
 const TILE_DEFS = [
   { id: 0, name: 'Empty',    color: '#2a2a3e', key: '0', uv: null },
   { id: 1, name: 'Ground',   color: '#8B5E3C', key: '1', uv: { col: 1, row: 1 } },
@@ -981,9 +981,15 @@ function addMenuLevel() {
   render();
 }
 
-function deleteLevel() {
+async function deleteLevel() {
   if (cur().isMenu) {
-    if (!confirm('Delete the Menu BG scene?')) return;
+    const ok = await studioConfirm({
+      title: "Delete Menu BG?",
+      message: "Delete the Menu BG scene?",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     levels.splice(currentLevelIdx, 1);
     currentLevelIdx = 0;
     syncFromLevel();
@@ -993,7 +999,13 @@ function deleteLevel() {
     return;
   }
   if (playableLevels().length <= 1) { alert('Cannot delete the only playable level.'); return; }
-  if (!confirm('Delete "' + cur().name + '"?')) return;
+  const ok = await studioConfirm({
+    title: "Delete level?",
+    message: `Delete "${cur().name}"?`,
+    confirmLabel: "Delete",
+    danger: true,
+  });
+  if (!ok) return;
   levels.splice(currentLevelIdx, 1);
   if (currentLevelIdx >= levels.length) currentLevelIdx = levels.length - 1;
   reindexPlayableLevels();
@@ -1981,8 +1993,14 @@ function resizeMap() {
   render();
 }
 
-function clearMap() {
-  if (!confirm('Clear "' + cur().name + '"?')) return;
+async function clearMap() {
+  const ok = await studioConfirm({
+    title: "Clear level?",
+    message: `Clear "${cur().name}"?`,
+    confirmLabel: "Clear",
+    danger: true,
+  });
+  if (!ok) return;
   for (let y = 0; y < mapH; y++) {
     tilemap[y].fill(0);
     if (tile3d[y]) tile3d[y].fill(false);

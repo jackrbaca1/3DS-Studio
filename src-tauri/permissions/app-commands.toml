@@ -11,6 +11,8 @@ commands.allow = [
   "create_project",
   "ensure_example_project",
   "list_studio_projects",
+  "rename_studio_project",
+  "delete_studio_project",
   "save_project_as",
   "create_named_project",
   "save_config",

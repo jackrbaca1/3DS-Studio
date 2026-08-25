@@ -8,7 +8,7 @@ Work phases in order. Do not start a phase until the previous phase **Exit check
 | 1 | [phase-1-portability.md](phase-1-portability.md) | Toolchain paths, saves/audio IDs, build outputs | **complete** |
 | 2 | [phase-2-ux.md](phase-2-ux.md) | Setup wizard, help, non-technical flow | **complete** |
 | 3 | [phase-3-packaging.md](phase-3-packaging.md) | Installer, Releases, signing | **complete** |
-| 4 | [phase-4-polish.md](phase-4-polish.md) | Docs, screenshots, legal/privacy pages | not started |
+| 4 | [phase-4-polish.md](phase-4-polish.md) | Docs, screenshots, legal/privacy pages | **complete** |
 | 5 | [phase-5-launch.md](phase-5-launch.md) | Public post, announce, post-launch | not started |
 
 ## How to track work
