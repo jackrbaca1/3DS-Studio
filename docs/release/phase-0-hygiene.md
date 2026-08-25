@@ -127,5 +127,5 @@ Record issues while doing Phase 0. Do not delete rows.
 
 - [x] All tasks above done or explicitly deferred with a Problem log row
 - [x] Problem log has no `open` blockers for Phase 1
-- [ ] Commit(s) pushed to a private or draft branch (public optional) — **git init done; commit when you ask**
+- [x] Commit(s) pushed to a private or draft branch (public optional) — **initial commit `0ad02d0` on `main`; not pushed**
 - [x] Ready for Phase 1
