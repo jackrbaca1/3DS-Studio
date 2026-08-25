@@ -9,7 +9,9 @@ Work phases in order. Do not start a phase until the previous phase **Exit check
 | 2 | [phase-2-ux.md](phase-2-ux.md) | Setup wizard, help, non-technical flow | **complete** |
 | 3 | [phase-3-packaging.md](phase-3-packaging.md) | Installer, Releases, signing | **complete** |
 | 4 | [phase-4-polish.md](phase-4-polish.md) | Docs, screenshots, legal/privacy pages | **complete** |
-| 5 | [phase-5-launch.md](phase-5-launch.md) | Public post, announce, post-launch | not started |
+| 5 | [phase-5-launch.md](phase-5-launch.md) | Public post, announce, post-launch | **in progress** |
+
+See also: [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) · [ANNOUNCE_v0.1.0.md](ANNOUNCE_v0.1.0.md)
 
 ## How to track work
 
