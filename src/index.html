@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3DS Studio — Platformer Editor</title>
+  <script>
+    (function () {
+      function status(text) {
+        var el = document.getElementById("toolchain-status");
+        if (el) el.textContent = text;
+      }
+      function showErr(text) {
+        var el = document.getElementById("welcome-error");
+        if (!el) return;
+        el.textContent = text;
+        el.classList.remove("hidden");
+      }
+      function waitInvoke(maxMs) {
+        return new Promise(function (resolve, reject) {
+          var t0 = Date.now();
+          (function tick() {
+            if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+              return resolve(window.__TAURI__.core.invoke.bind(window.__TAURI__.core));
+            }
+            if (Date.now() - t0 > maxMs) {
+              return reject(new Error("Tauri API not ready — run with npm run dev"));
+            }
+            setTimeout(tick, 50);
+          })();
+        });
+      }
+      document.addEventListener("DOMContentLoaded", function () {
+        status("Starting UI…");
+        waitInvoke(15000)
+          .then(function (invoke) {
+            status("Checking devkitPro…");
+            return invoke("check_toolchain")
+              .then(function (path) {
+                status("devkitPro ready — builds will produce .3dsx (" + path + ")");
+              })
+              .catch(function () {
+                status("Ready — install devkitPro at C:\\devkitPro to compile .3dsx");
+              });
+          })
+          .catch(function (e) {
+            status("UI error");
+            showErr(e.message || String(e));
+          });
+      });
+    })();
+  </script>
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+
+<!-- ═══ Welcome Screen ═══ -->
+<div id="welcome-screen">
+  <div class="welcome-card">
+    <h1>3DS Studio</h1>
+    <p>A visual, code-free editor for Nintendo 3DS platformer games.<br>Open your devkitPro platformer folder, edit levels, tune physics, and build a <strong>.3dsx</strong>.</p>
+    <div class="welcome-actions">
+      <button class="welcome-btn new-project" id="btn-open-platformer">Open My Platformer</button>
+      <button class="welcome-btn open-project" id="btn-open-project">Open Other Folder…</button>
+      <button class="welcome-btn open-project" id="btn-new-project" style="margin-top:4px; font-size:12px; padding:10px;">New Project from Template</button>
+    </div>
+    <div id="welcome-error" class="welcome-error hidden"></div>
+    <div id="toolchain-status" style="margin-top:20px; font-size:11px; color:#5a6478;">Loading…</div>
+  </div>
+</div>
+
+<!-- ═══ Top Bar ═══ -->
+<div id="topbar">
+  <span class="app-title">3DS STUDIO</span>
+  <button class="topbar-btn" id="btn-save" title="Save project (Ctrl+S)">💾 Save</button>
+  <button class="topbar-btn" id="btn-export-cpp" title="Export levels to C++">Export C++</button>
+  <button class="topbar-btn" id="btn-reimport-cpp" title="Reload levels from main.cpp">Reload C++</button>
+  <button class="topbar-btn" id="btn-import-json">Load JSON</button>
+  <button class="topbar-btn" id="btn-save-json">Save JSON</button>
+  <button class="topbar-btn" id="btn-trackpad-mode" title="Toggle trackpad mode (T)">Trackpad: Off</button>
+  <span class="topbar-spacer"></span>
+  <span id="project-name-display"></span>
+  <button class="topbar-btn success" id="btn-compile" title="Compile game">▶ Build</button>
+  <button class="topbar-btn success" id="btn-build-cia" title="Build installable .cia package">Build CIA</button>
+  <button class="topbar-btn" id="btn-3dslink" title="Send .3dsx to 3DS via 3dslink (HB Launcher → Y)">3dslink</button>
+  <button class="topbar-btn danger" id="btn-clean" title="Clean build">Clean</button>
+  <button class="topbar-btn" id="btn-open-folder" title="Open project folder">📁</button>
+</div>
+
+<!-- ═══ Workspace (editor + build console) ═══ -->
+<div id="workspace">
+
+<div id="app-layout">
+
+  <!-- ── Left Panel: Levels, Tiles, Tools ── -->
+  <aside id="left-panel" class="side-dock">
+    <div class="dock-toolbar" data-dock-toggle="left">
+      <span class="dock-title">Level &amp; Tools</span>
+      <button type="button" class="dock-collapse-btn" data-dock-collapse="left" aria-label="Collapse left panel" title="Collapse">◀</button>
+    </div>
+    <div class="dock-scroll">
+
+    <!-- Levels & Worlds -->
+    <div class="panel-section level-organizer-section">
+      <h3>Levels & Worlds</h3>
+      <div id="level-list" class="level-organizer"></div>
+      <div class="level-organizer-toolbar">
+        <button type="button" id="btn-level-up" title="Move level up in list">↑</button>
+        <button type="button" id="btn-level-down" title="Move level down in list">↓</button>
+        <select id="level-move-world" title="Move current level to another world">
+          <option value="1">→ World 1</option>
+          <option value="2">→ World 2</option>
+          <option value="0">→ Secret</option>
+        </select>
+        <button type="button" id="btn-level-move-world" class="toolbar-go">Move</button>
+      </div>
+      <div class="level-add-row">
+        <select id="add-level-world">
+          <option value="1">World 1 (80×16)</option>
+          <option value="2">World 2 (80×32)</option>
+          <option value="0">Secret</option>
+        </select>
+        <button type="button" id="btn-add-level">+ Level</button>
+      </div>
+      <div class="level-actions">
+        <button type="button" id="btn-add-menu">Menu BG</button>
+        <button type="button" id="btn-del-level">Delete</button>
+      </div>
+      <div class="control-row" style="margin-top:8px;">
+        <label>World</label>
+        <select id="level-world">
+          <option value="1">World 1 — standard</option>
+          <option value="2">World 2 — tall / double jump</option>
+          <option value="0">Secret</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <label>Name</label>
+        <input type="text" id="level-name" value="Level 1" />
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="level-hidden" />
+        <span>Secret Level</span>
+      </div>
+    </div>
+
+    <!-- Tile Palette -->
+    <div class="panel-section">
+      <h3>Tiles</h3>
+      <div id="tile-palette" class="tile-palette"></div>
+    </div>
+
+    <!-- Tools -->
+    <div class="panel-section">
+      <h3>Tools</h3>
+      <div class="tool-grid">
+        <button class="tool-btn active" data-tool="paint">Paint</button>
+        <button class="tool-btn" data-tool="erase">Erase</button>
+        <button class="tool-btn" data-tool="fill">Fill</button>
+        <button class="tool-btn" data-tool="coin">Cracker</button>
+        <button class="tool-btn" data-tool="enemy">Enemy</button>
+        <button class="tool-btn" data-tool="spawn">Spawn</button>
+        <button class="tool-btn" data-tool="tile3d">3D</button>
+        <button class="tool-btn" data-tool="warp">Warp</button>
+        <button class="tool-btn" data-tool="win">Win</button>
+        <button class="tool-btn" data-tool="checkpoint">Checkpoint</button>
+      </div>
+      <div class="toggle-row" style="margin-top:10px;">
+        <input type="checkbox" id="trackpad-mode" />
+        <span>Trackpad Mode</span>
+      </div>
+      <p class="panel-hint" id="trackpad-help">Off: wheel zoom, middle mouse pan, right drag erase.</p>
+    </div>
+
+    <!-- Map Size -->
+    <div class="panel-section">
+      <h3>Map Size</h3>
+      <div class="control-row">
+        <label>Width</label>
+        <input type="number" id="map-w" min="10" max="200" value="80" />
+      </div>
+      <div class="control-row">
+        <label>Height</label>
+        <input type="number" id="map-h" min="5" max="50" value="16" />
+      </div>
+      <button class="topbar-btn" style="width:100%; margin-top:4px;" id="btn-resize-map">Resize</button>
+    </div>
+
+    <!-- Per-level resource limits (3DS runtime) -->
+    <div class="panel-section" id="level-budget-section">
+      <h3>Level Budget</h3>
+      <p id="level-budget-hint" class="panel-hint">Counts for the selected level vs game maximums.</p>
+      <div id="level-budget-list" class="level-budget-list"></div>
+      <p id="level-budget-ram" class="panel-hint level-budget-ram"></p>
+    </div>
+
+    </div>
+  </aside>
+
+  <div class="dock-splitter dock-splitter-v" data-splitter="left" title="Drag to resize left panel" aria-hidden="false"></div>
+
+  <!-- ── Center: Canvas ── -->
+  <div id="center-panel">
+    <canvas id="editor-canvas"></canvas>
+    <div id="canvas-status">Ready</div>
+    <div id="canvas-viewport-controls" class="canvas-viewport-controls">
+      <button type="button" class="viewport-btn" id="btn-view-fit" title="Fit level on screen">Fit</button>
+      <button type="button" class="viewport-btn" id="btn-view-fill" title="Fill screen with level">Fill</button>
+      <select id="canvas-zoom-select" title="Zoom level" aria-label="Zoom level">
+        <option value="fit">Fit on Screen</option>
+        <option value="fill">Fill Screen</option>
+        <option value="0.0625">6.25%</option>
+        <option value="0.125">12.5%</option>
+        <option value="0.25">25%</option>
+        <option value="0.3333">33.33%</option>
+        <option value="0.5">50%</option>
+        <option value="0.6667">66.67%</option>
+        <option value="1" selected>100%</option>
+        <option value="1.5">150%</option>
+        <option value="2">200%</option>
+        <option value="3">300%</option>
+        <option value="4">400%</option>
+        <option value="5">500%</option>
+      </select>
+      <span id="canvas-zoom-label">100%</span>
+    </div>
+  </div>
+
+  <div class="dock-splitter dock-splitter-v" data-splitter="right" title="Drag to resize right panel" aria-hidden="false"></div>
+
+  <!-- ── Right Panel: Config & Assets ── -->
+  <aside id="right-panel" class="side-dock">
+    <div class="dock-toolbar" data-dock-toggle="right">
+      <span class="dock-title">Settings</span>
+      <button type="button" class="dock-collapse-btn" data-dock-collapse="right" aria-label="Collapse right panel" title="Collapse">▶</button>
+    </div>
+    <div class="dock-scroll">
+
+    <!-- App Metadata -->
+    <div class="panel-section">
+      <h3>Game Info</h3>
+      <div class="control-row">
+        <label>Title</label>
+        <input type="text" id="cfg-app-title" value="My 3DS Platformer" />
+      </div>
+      <div class="control-row">
+        <label>Author</label>
+        <input type="text" id="cfg-app-author" value="Game Developer" />
+      </div>
+      <div class="control-row">
+        <label>Description</label>
+        <input type="text" id="cfg-app-desc" value="A 3DS platformer game" />
+      </div>
+    </div>
+
+    <!-- Global physics (game_config.h) -->
+    <div class="panel-section">
+      <h3>Global Physics</h3>
+      <p class="panel-hint">Default for all levels. Override per level below.</p>
+      <div class="slider-row">
+        <label>Run Speed</label>
+        <input type="range" id="cfg-move-speed" min="1" max="8" step="0.1" value="3.5" />
+        <span class="slider-value" id="val-move-speed">3.5</span>
+      </div>
+      <div class="slider-row">
+        <label>Sprint Speed</label>
+        <input type="range" id="cfg-sprint-speed" min="3" max="12" step="0.1" value="5.5" />
+        <span class="slider-value" id="val-sprint-speed">5.5</span>
+      </div>
+      <div class="slider-row">
+        <label>Jump Force</label>
+        <input type="range" id="cfg-jump-force" min="-14" max="-3" step="0.1" value="-7.8" />
+        <span class="slider-value" id="val-jump-force">-7.8</span>
+      </div>
+      <div class="slider-row">
+        <label>DJump Force</label>
+        <input type="range" id="cfg-djump-force" min="-14" max="-3" step="0.1" value="-9.0" />
+        <span class="slider-value" id="val-djump-force">-9.0</span>
+      </div>
+      <div class="slider-row">
+        <label>Gravity</label>
+        <input type="range" id="cfg-gravity" min="0.1" max="1.5" step="0.01" value="0.48" />
+        <span class="slider-value" id="val-gravity">0.48</span>
+      </div>
+      <div class="slider-row">
+        <label>Gravity Fall</label>
+        <input type="range" id="cfg-gravity-fall" min="0.1" max="2.0" step="0.01" value="0.78" />
+        <span class="slider-value" id="val-gravity-fall">0.78</span>
+      </div>
+      <div class="slider-row">
+        <label>Dash Speed</label>
+        <input type="range" id="cfg-dash-speed" min="5" max="20" step="0.5" value="12" />
+        <span class="slider-value" id="val-dash-speed">12.0</span>
+      </div>
+    </div>
+
+    <!-- Per-level feature toggles -->
+    <div class="panel-section">
+      <h3>Level Features</h3>
+      <p id="level-features-hint" class="panel-hint">Applies to the selected level.</p>
+      <div class="toggle-row">
+        <input type="checkbox" id="cfg-double-jump" checked />
+        <span>Double Jump</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="cfg-dialogue" checked />
+        <span>Dialogue (in-game)</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="cfg-wall-jump" checked />
+        <span>Wall Jump</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="cfg-dash" checked />
+        <span>Dash</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="cfg-ground-pound" checked />
+        <span>Ground Pound</span>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="cfg-minimap" checked />
+        <span>Minimap (bottom screen)</span>
+      </div>
+    </div>
+
+    <!-- Per-level physics overrides -->
+    <div class="panel-section" id="level-physics-section">
+      <h3>Level Physics</h3>
+      <p id="level-physics-hint" class="panel-hint">Applies to the selected level.</p>
+      <div class="toggle-row">
+        <input type="checkbox" id="cfg-custom-physics" />
+        <span>Custom physics for this level</span>
+      </div>
+      <div id="level-physics-sliders" class="level-physics-sliders hidden">
+        <div class="slider-row">
+          <label>Run Speed</label>
+          <input type="range" id="lvl-move-speed" min="1" max="8" step="0.1" value="3.5" />
+          <span class="slider-value" id="val-lvl-move-speed">3.5</span>
+        </div>
+        <div class="slider-row">
+          <label>Sprint Speed</label>
+          <input type="range" id="lvl-sprint-speed" min="3" max="12" step="0.1" value="5.5" />
+          <span class="slider-value" id="val-lvl-sprint-speed">5.5</span>
+        </div>
+        <div class="slider-row">
+          <label>Jump Force</label>
+          <input type="range" id="lvl-jump-force" min="-14" max="-3" step="0.1" value="-7.8" />
+          <span class="slider-value" id="val-lvl-jump-force">-7.8</span>
+        </div>
+        <div class="slider-row">
+          <label>DJump Force</label>
+          <input type="range" id="lvl-djump-force" min="-14" max="-3" step="0.1" value="-9.0" />
+          <span class="slider-value" id="val-lvl-djump-force">-9.0</span>
+        </div>
+        <div class="slider-row">
+          <label>Gravity</label>
+          <input type="range" id="lvl-gravity" min="0.1" max="1.5" step="0.01" value="0.48" />
+          <span class="slider-value" id="val-lvl-gravity">0.48</span>
+        </div>
+        <div class="slider-row">
+          <label>Gravity Fall</label>
+          <input type="range" id="lvl-gravity-fall" min="0.1" max="2.0" step="0.01" value="0.78" />
+          <span class="slider-value" id="val-lvl-gravity-fall">0.78</span>
+        </div>
+        <div class="slider-row">
+          <label>Dash Speed</label>
+          <input type="range" id="lvl-dash-speed" min="5" max="20" step="0.5" value="12" />
+          <span class="slider-value" id="val-lvl-dash-speed">12.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialogue lines (per level) -->
+    <div class="panel-section" id="dialogue-section">
+      <h3>Dialogue Lines</h3>
+      <p id="dialogue-hint" class="panel-hint">Up to 4 text boxes before and after the level. Enable <strong>Dialogue (in-game)</strong> above for lines to play.</p>
+      <p class="panel-hint dialogue-format-hint">{p:30} = pause · **bold** = bold text</p>
+      <div class="toggle-row">
+        <input type="checkbox" id="dlg-pre-enable" />
+        <span>Pre-level dialogue</span>
+      </div>
+      <div id="dlg-pre-boxes" class="dialogue-boxes hidden">
+        <label class="dialogue-box-label">Box 1</label>
+        <textarea class="dialogue-textarea" id="dlg-pre-1" rows="3" placeholder="Text shown before the level starts…"></textarea>
+        <label class="dialogue-box-label">Box 2</label>
+        <textarea class="dialogue-textarea" id="dlg-pre-2" rows="3" placeholder="Optional second box…"></textarea>
+        <label class="dialogue-box-label">Box 3</label>
+        <textarea class="dialogue-textarea" id="dlg-pre-3" rows="3" placeholder="Optional third box…"></textarea>
+        <label class="dialogue-box-label">Box 4</label>
+        <textarea class="dialogue-textarea" id="dlg-pre-4" rows="3" placeholder="Optional fourth box…"></textarea>
+      </div>
+      <div class="toggle-row dialogue-post-toggle">
+        <input type="checkbox" id="dlg-post-enable" />
+        <span>Post-level dialogue</span>
+      </div>
+      <div id="dlg-post-boxes" class="dialogue-boxes hidden">
+        <label class="dialogue-box-label">Box 1</label>
+        <textarea class="dialogue-textarea" id="dlg-post-1" rows="3" placeholder="Text after completing the level…"></textarea>
+        <label class="dialogue-box-label">Box 2</label>
+        <textarea class="dialogue-textarea" id="dlg-post-2" rows="3" placeholder="Optional second box…"></textarea>
+        <label class="dialogue-box-label">Box 3</label>
+        <textarea class="dialogue-textarea" id="dlg-post-3" rows="3" placeholder="Optional third box…"></textarea>
+        <label class="dialogue-box-label">Box 4</label>
+        <textarea class="dialogue-textarea" id="dlg-post-4" rows="3" placeholder="Optional fourth box…"></textarea>
+      </div>
+    </div>
+
+    <!-- Assets -->
+    <div class="panel-section">
+      <h3>Assets</h3>
+      <p class="panel-hint">Click a slot to replace the PNG/MP3. Rebuild to bake into the game.</p>
+      <div class="asset-slot" data-asset="tileset">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Tileset</div>
+          <div class="asset-file">Click to import PNG…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="background1">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Cave Background 1</div>
+          <div class="asset-file">Click to import PNG…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="background2">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Cave Background 2</div>
+          <div class="asset-file">Click to import PNG…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="title">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Title Screen</div>
+          <div class="asset-file">Click to import PNG…</div>
+        </div>
+      </div>
+
+      <h4 class="asset-group-title">Main Menu (bottom screen)</h4>
+      <div class="asset-slot" data-asset="bottom_menu">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Menu Background</div>
+          <div class="asset-file">BottomMenuScreen.png…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="menu_load">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Load Button (highlight)</div>
+          <div class="asset-file">LoadGameSelected.png…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="menu_new">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">New Game Button (highlight)</div>
+          <div class="asset-file">NewGameSelected.png…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="menu_settings">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Settings Button (highlight)</div>
+          <div class="asset-file">SettingsSelected.png…</div>
+        </div>
+      </div>
+
+      <h4 class="asset-group-title">Audio &amp; install</h4>
+      <div class="asset-slot" data-asset="soundtrack">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Soundtrack</div>
+          <div class="asset-file">Click to import MP3…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="icon">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">Home Menu Icon</div>
+          <div class="asset-file">48×48 PNG…</div>
+        </div>
+      </div>
+      <div class="asset-slot" data-asset="banner">
+        <div class="asset-thumb" aria-hidden="true"></div>
+        <div class="asset-info">
+          <div class="asset-label">CIA Banner</div>
+          <div class="asset-file">256×128 PNG…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tileset Upload (for editor preview) -->
+    <div class="panel-section">
+      <h3>Editor Tileset Preview</h3>
+      <input type="file" id="tileset-upload" accept="image/png" style="font-size:11px; color:var(--text-secondary);" />
+    </div>
+
+    </div>
+  </aside>
+
+</div>
+
+<div class="dock-splitter dock-splitter-h" id="build-splitter" data-splitter="build" title="Drag to resize build console" aria-hidden="false"></div>
+
+<!-- ═══ Build Console ═══ -->
+<div id="build-panel" class="bottom-dock">
+  <div id="build-header" class="dock-toolbar" data-dock-toggle="build">
+    <div id="build-status-dot"></div>
+    <h4>Build Console</h4>
+    <button type="button" class="dock-collapse-btn" id="build-toggle" data-dock-collapse="build" aria-label="Collapse build console" title="Collapse">▼</button>
+  </div>
+  <div id="build-output" class="dock-scroll"></div>
+</div>
+
+</div>
+
+<!-- ═══ 3dslink IP Modal ═══ -->
+<div id="threedslink-overlay" class="hidden modal-overlay">
+  <div class="threedslink-dialog">
+    <h3>Connect with 3dslink</h3>
+    <p class="threedslink-hint">On your 3DS, open Homebrew Launcher and press <strong>Y</strong> to show the console IP. Enter that address below.</p>
+    <label class="threedslink-label" for="threedslink-ip">3DS IP address</label>
+    <input type="text" id="threedslink-ip" placeholder="192.168.1.100" autocomplete="off" spellcheck="false" />
+    <div class="threedslink-actions">
+      <button type="button" class="topbar-btn" id="threedslink-cancel">Cancel</button>
+      <button type="button" class="topbar-btn primary" id="threedslink-connect">Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Export Modal ═══ -->
+<div id="modal-overlay" class="hidden modal-overlay">
+  <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-lg);width:750px;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <h3 id="modal-title" style="font-size:14px;color:var(--accent);">Exported C++</h3>
+      <button id="modal-close" style="background:none;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px;overflow-y:auto;flex:1;">
+      <textarea id="export-text" readonly style="width:100%;height:400px;background:var(--bg-input);color:#80ffdb;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-family:Consolas,monospace;font-size:11px;resize:vertical;"></textarea>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;">
+      <button class="topbar-btn primary" id="btn-copy-export">Copy to Clipboard</button>
+      <button class="topbar-btn" id="btn-close-modal">Close</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+fn main() {
+    tauri_build::try_build(
+        tauri_build::Attributes::new().app_manifest(
+            tauri_build::AppManifest::new().commands(&[
+                "pick_directory",
+                "pick_file",
+                "check_toolchain",
+                "create_project",
+                "save_config",
+                "compile_project",
+                "compile_project_cia",
+                "clean_project",
+                "run_3dslink",
+                "open_project_folder",
+                "import_asset",
+                "write_levels",
+                "save_project_json",
+                "load_project_json",
+                "project_exists",
+                "read_text_file",
+                "read_binary_file",
+                "inspect_project",
+                "load_project_config",
+                "ensure_studio_integration",
+                "get_asset_status",
+            ]),
+        ),
+    )
+    .expect("failed to run tauri build");
+}

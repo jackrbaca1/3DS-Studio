@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ensure-studio-integration"
+description = "Enables the ensure_studio_integration command without any pre-configured scope."
+commands.allow = ["ensure_studio_integration"]
+
+[[permission]]
+identifier = "deny-ensure-studio-integration"
+description = "Denies the ensure_studio_integration command without any pre-configured scope."
+commands.deny = ["ensure_studio_integration"]

@@ -1,0 +1,15 @@
+{
+  "name": "3ds-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/tauri-dev.ps1",
+    "tauri:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/tauri-dev.ps1",
+    "tauri:build": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/tauri-dev.ps1 build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

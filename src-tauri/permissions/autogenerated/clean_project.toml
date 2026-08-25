@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clean-project"
+description = "Enables the clean_project command without any pre-configured scope."
+commands.allow = ["clean_project"]
+
+[[permission]]
+identifier = "deny-clean-project"
+description = "Denies the clean_project command without any pre-configured scope."
+commands.deny = ["clean_project"]

@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3DS Platformer — Level Editor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  #sidebar { width: 230px; background: #16213e; display: flex; flex-direction: column; gap: 10px; padding: 10px; overflow-y: auto; border-right: 2px solid #0f3460; }
+  #sidebar h2 { font-size: 13px; color: #8ecae6; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #0f3460; padding-bottom: 4px; margin-bottom: 4px; }
+  .palette-btn { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 2px solid transparent; border-radius: 6px; cursor: pointer; background: #1a1a2e; transition: all 0.15s; }
+  .palette-btn:hover { background: #0f3460; }
+  .palette-btn.active { border-color: #00b4d8; background: #0f3460; }
+  .palette-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #555; flex-shrink: 0; }
+  .palette-label { font-size: 12px; }
+
+  .tool-group { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tool-btn { flex: 1; min-width: 65px; padding: 5px; background: #1a1a2e; border: 1px solid #0f3460; border-radius: 4px; color: #e0e0e0; cursor: pointer; font-size: 11px; text-align: center; }
+  .tool-btn:hover { background: #0f3460; }
+  .tool-btn.active { border-color: #00b4d8; background: #0f3460; }
+
+  .input-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .input-row label { min-width: 45px; }
+  .input-row input { width: 55px; padding: 3px; background: #1a1a2e; border: 1px solid #0f3460; color: #e0e0e0; border-radius: 3px; font-size: 12px; }
+  .input-row input[type="text"] { width: 120px; }
+
+  .action-btn { padding: 6px 8px; background: #0f3460; border: none; border-radius: 4px; color: #e0e0e0; cursor: pointer; font-size: 12px; font-weight: 600; width: 100%; }
+  .action-btn:hover { background: #00b4d8; color: #1a1a2e; }
+  .action-btn.danger { background: #6b0f1a; }
+  .action-btn.danger:hover { background: #d62828; }
+  .action-btn.export { background: #2d6a4f; }
+  .action-btn.export:hover { background: #40916c; }
+  .action-btn.small { width: auto; padding: 4px 8px; font-size: 11px; }
+
+  #tileset-upload { font-size: 11px; }
+
+  /* ── Level Tabs ── */
+  #level-tabs { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; }
+  .level-tab { padding: 4px 10px; background: #1a1a2e; border: 1px solid #0f3460; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 11px; white-space: nowrap; }
+  .level-tab:hover { background: #0f3460; }
+  .level-tab.active { background: #0f3460; border-color: #00b4d8; color: #00b4d8; font-weight: bold; }
+  .level-tab .tab-close { margin-left: 6px; color: #888; font-size: 13px; }
+  .level-tab .tab-close:hover { color: #d62828; }
+  #add-level-btn { padding: 4px 8px; background: #2d6a4f; border: 1px solid #40916c; border-radius: 4px; cursor: pointer; font-size: 13px; color: #e0e0e0; font-weight: bold; }
+  #add-level-btn:hover { background: #40916c; }
+
+  /* ── Main Canvas Area ── */
+  #main { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
+  #main.trackpad-mode { cursor: default; }
+  #main.trackpad-mode.space-pan { cursor: grab; }
+  #canvas { display: block; }
+  #status { position: absolute; bottom: 8px; left: 8px; font-size: 12px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 4px; pointer-events: none; }
+  #zoom-label { position: absolute; top: 8px; right: 8px; font-size: 12px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 4px; pointer-events: none; }
+
+  /* ── Export Modal ── */
+  #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
+  #modal-overlay.show { display: flex; }
+  #modal { background: #16213e; border: 2px solid #0f3460; border-radius: 8px; width: 750px; max-height: 85vh; display: flex; flex-direction: column; }
+  #modal-header { padding: 12px 16px; border-bottom: 1px solid #0f3460; display: flex; justify-content: space-between; align-items: center; }
+  #modal-header h3 { font-size: 16px; color: #8ecae6; }
+  #modal-close { background: none; border: none; color: #e0e0e0; font-size: 20px; cursor: pointer; }
+  #modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+  #modal-body textarea { width: 100%; height: 400px; background: #1a1a2e; color: #80ffdb; border: 1px solid #0f3460; border-radius: 4px; padding: 10px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; resize: vertical; }
+  #modal-footer { padding: 12px 16px; border-top: 1px solid #0f3460; display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div>
+    <h2>Levels</h2>
+    <div id="level-tabs"></div>
+    <div id="add-level-btn" onclick="addLevel()" title="Add new level">+</div>
+    <div style="height:4px"></div>
+    <button class="action-btn" onclick="addMenuLevel()" title="Add or jump to the Menu BG scene">Menu BG</button>
+    <div style="height:4px"></div>
+    <div class="input-row"><label>Name:</label><input id="level-name" type="text" value="Level 1" oninput="renameCurrent()"></div>
+    <div style="height:4px"></div>
+    <div class="input-row"><label style="font-size:11px"><input id="level-hidden" type="checkbox" onchange="toggleHidden()"> Hidden (secret level)</label></div>
+  </div>
+
+  <div>
+    <h2>Tiles</h2>
+    <div id="palette"></div>
+  </div>
+
+  <div>
+    <h2>Tools</h2>
+    <div class="tool-group">
+      <div class="tool-btn active" data-tool="paint" title="Left-click to paint">Paint</div>
+      <div class="tool-btn" data-tool="erase" title="Erase tiles only">Erase</div>
+      <div class="tool-btn" data-tool="fill" title="Fill connected region">Fill</div>
+      <div class="tool-btn" data-tool="coin" title="Place/remove crackers">Cracker</div>
+      <div class="tool-btn" data-tool="enemy" title="Place/remove enemies">Enemy</div>
+      <div class="tool-btn" data-tool="spawn" title="Set player spawn">Spawn</div>
+      <div class="tool-btn" data-tool="tile3d" title="Toggle 3D flag on tile">3D</div>
+      <div class="tool-btn" data-tool="warp" title="Toggle warp overlay on tile">Warp</div>
+    </div>
+    <div style="margin-top:8px; font-size:11px;">
+      <label><input id="trackpad-mode" type="checkbox"> Trackpad Mode</label>
+    </div>
+  </div>
+
+  <div>
+    <h2>Map Size</h2>
+    <div class="input-row"><label>Width:</label><input id="map-w" type="number" min="10" max="200" value="80"></div>
+    <div style="height:4px"></div>
+    <div class="input-row"><label>Height:</label><input id="map-h" type="number" min="5" max="50" value="16"></div>
+    <div style="height:4px"></div>
+    <button class="action-btn" onclick="resizeMap()">Resize</button>
+  </div>
+
+  <div>
+    <h2>Tileset Image</h2>
+    <input type="file" id="tileset-upload" accept="image/png" onchange="loadTileset(event)">
+  </div>
+
+  <div>
+    <h2>Actions</h2>
+    <button class="action-btn" style="background:#7b2d8b" onclick="syncToFile()">Sync to main.cpp</button>
+    <div style="height:4px"></div>
+    <button class="action-btn export" onclick="showExport()">Export Current Level C++</button>
+    <div style="height:4px"></div>
+    <button class="action-btn export" onclick="showExportAll()">Export All Levels C++</button>
+    <div style="height:4px"></div>
+    <button class="action-btn" onclick="saveJSON()">Save All Levels JSON</button>
+    <div style="height:4px"></div>
+    <button class="action-btn" style="background:#7b2d8b" onclick="importFromCpp()">Import from main.cpp</button>
+    <div style="height:4px"></div>
+    <button class="action-btn" onclick="document.getElementById('json-upload').click()">Load JSON</button>
+    <input type="file" id="json-upload" accept=".json" style="display:none" onchange="loadJSON(event)">
+    <div style="height:4px"></div>
+    <button class="action-btn danger" onclick="clearMap()">Clear Current Level</button>
+    <div style="height:4px"></div>
+    <button class="action-btn danger" onclick="deleteLevel()">Delete Current Level</button>
+  </div>
+
+  <div>
+    <h2>Dialogue</h2>
+    <div style="font-size:11px; margin-bottom:6px; color:#8ecae6;">Type {p:30} for pause, **bold** for bold</div>
+    <div class="input-row" style="margin-bottom:4px;">
+      <label style="min-width:auto; font-size:11px;"><input id="dlg-pre-enable" type="checkbox" onchange="toggleDialoguePre()"> Pre-level</label>
+    </div>
+    <div id="dlg-pre-boxes" style="display:none; margin-bottom:8px;">
+      <textarea id="dlg-pre-1" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical; margin-bottom:2px;" placeholder="Box 1" onchange="saveDialogue()"></textarea>
+      <textarea id="dlg-pre-2" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical; margin-bottom:2px;" placeholder="Box 2" onchange="saveDialogue()"></textarea>
+      <textarea id="dlg-pre-3" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical; margin-bottom:2px;" placeholder="Box 3" onchange="saveDialogue()"></textarea>
+      <textarea id="dlg-pre-4" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical;" placeholder="Box 4" onchange="saveDialogue()"></textarea>
+    </div>
+    <div class="input-row" style="margin-bottom:4px;">
+      <label style="min-width:auto; font-size:11px;"><input id="dlg-post-enable" type="checkbox" onchange="toggleDialoguePost()"> Post-level</label>
+    </div>
+    <div id="dlg-post-boxes" style="display:none;">
+      <textarea id="dlg-post-1" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical; margin-bottom:2px;" placeholder="Box 1" onchange="saveDialogue()"></textarea>
+      <textarea id="dlg-post-2" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical; margin-bottom:2px;" placeholder="Box 2" onchange="saveDialogue()"></textarea>
+      <textarea id="dlg-post-3" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical; margin-bottom:2px;" placeholder="Box 3" onchange="saveDialogue()"></textarea>
+      <textarea id="dlg-post-4" style="width:100%; height:40px; background:#1a1a2e; border:1px solid #0f3460; color:#e0e0e0; font-size:11px; resize:vertical;" placeholder="Box 4" onchange="saveDialogue()"></textarea>
+    </div>
+  </div>
+
+  <div>
+    <h2>Shortcuts</h2>
+    <div style="font-size:11px; line-height:1.5; color:#aaa;">
+      <b>LMB</b> — Paint / place<br>
+      <b>RMB</b> — Erase tile<br>
+      <b>MMB drag</b> — Pan<br>
+      <b>Mouse wheel</b> — Zoom<br>
+      <b>Trackpad scroll</b> — Pan<br>
+      <b>Trackpad pinch</b> — Zoom<br>
+      <b>Space+drag</b> — Pan (trackpad)<br>
+      <b>Shift+drag</b> — Erase (trackpad)<br>
+      <b>1-9</b> — Select tile<br>
+      <b>E</b> — Eraser<br>
+      <b>F</b> — Fill tool<br>
+      <b>C</b> — Cracker tool<br>
+      <b>N</b> — Enemy tool<br>
+      <b>S</b> — Spawn tool<br>
+      <b>D</b> — 3D tile tool<br>
+      <b>W</b> — Warp tool<br>
+      <b>G</b> — Toggle grid<br>
+      <b>Ctrl+Z</b> — Undo<br>
+      <b>Ctrl+Y</b> — Redo<br>
+    </div>
+  </div>
+</div>
+
+<div id="main">
+  <canvas id="canvas"></canvas>
+  <div id="status">Ready</div>
+  <div id="zoom-label">100%</div>
+</div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-header">
+      <h3 id="modal-title">Exported C++</h3>
+      <button id="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div id="modal-body">
+      <textarea id="export-text" readonly></textarea>
+    </div>
+    <div id="modal-footer">
+      <button class="action-btn" style="width:auto" onclick="copyExport()">Copy to Clipboard</button>
+      <button class="action-btn" style="width:auto" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// Tile definitions — must match main.cpp
+// ═══════════════════════════════════════════════════
+const TILE_DEFS = [
+  { id: 0, name: 'Empty',    color: '#2a2a3e', key: '0', uv: null },
+  { id: 1, name: 'Ground',   color: '#8B5E3C', key: '1', uv: { col: 1, row: 1 } },
+  { id: 2, name: 'Fill',     color: '#5C3A1E', key: '2', uv: { col: 1, row: 2 } },
+  { id: 3, name: 'Spike',    color: '#D62828', key: '3', uv: { col: 6, row: 1 } },
+  { id: 4, name: 'Platform', color: '#457B9D', key: '4', uv: { col: 9, row: 1 } },
+  { id: 5, name: 'One-Way',  color: '#6BAED6', key: '5', uv: { col: 8, row: 1 } },
+  { id: 6, name: 'BG Decor', color: '#3a5c3a', key: '6', uv: { col: 10, row: 1 } },
+  { id: 7, name: 'Crumble',  color: '#B48C3C', key: '7', uv: { col: 7, row: 1 } },
+  { id: 8, name: 'Moving',   color: '#9B59B6', key: '8', uv: { col: 5, row: 1 } },
+  { id: 9, name: 'Warp',     color: '#00CED1', key: '9', uv: { col: 4, row: 1 } },
+];
+
+const TILE_SIZE = 32;
+
+// ═══════════════════════════════════════════════════
+// Multi-level state
+// ═══════════════════════════════════════════════════
+let nextLevelIndex = 0;
+
+function getNextLevelIndex() {
+  return nextLevelIndex++;
+}
+
+function createLevel(name, w, h, world, isMenu, levelIndex) {
+  const tilemap = [];
+  const tile3d = [];
+  const warpOverlay = [];
+  for (let y = 0; y < h; y++) {
+    tilemap.push(new Array(w).fill(0));
+    tile3d.push(new Array(w).fill(false));
+    warpOverlay.push(new Array(w).fill(false));
+  }
+  const idx = levelIndex !== undefined ? levelIndex : getNextLevelIndex();
+  return {
+    levelIndex: idx,
+    name: name || 'Untitled',
+    mapW: w || 80, mapH: h || 16,
+    world: world || 1,
+    isMenu: !!isMenu,
+    isHidden: false,
+    tilemap,
+    tile3d,
+    warpOverlay,
+    warpTarget: -1,
+    coins: [],
+    enemies: [],
+    spawnX: 1.5 * TILE_SIZE,
+    spawnY: (h - 2) * TILE_SIZE - 28,
+    undoStack: [], redoStack: [],
+    dialoguePreEnabled: false,
+    dialoguePostEnabled: false,
+    dialoguePre: ['', '', '', ''],
+    dialoguePost: ['', '', '', ''],
+  };
+}
+
+// Initialize with proper level indexing
+nextLevelIndex = 0;
+let levels = [createLevel('1-1', 80, 16, 1, false, 0)];
+let currentLevelIdx = 0;
+
+// Menu BG helpers
+function findMenuLevelIdx() {
+  return levels.findIndex(l => l.isMenu);
+}
+function playableLevels() {
+  return levels.filter(l => !l.isMenu && !l.isHidden);
+}
+function allGameLevels() {
+  return levels.filter(l => !l.isMenu);
+}
+
+// Convenience accessors for current level
+function cur() { return levels[currentLevelIdx]; }
+
+// Expose current level fields as module-level vars for rendering/editing
+let mapW, mapH, tilemap, coins, enemies, spawnX, spawnY, undoStack, redoStack;
+
+let tile3d, warpOverlay;
+
+function syncFromLevel() {
+  const L = cur();
+  mapW = L.mapW; mapH = L.mapH;
+  tilemap = L.tilemap; coins = L.coins;
+  enemies = L.enemies || []; L.enemies = enemies;
+  // Ensure overlay arrays exist (for levels loaded from older saves)
+  if (!L.tile3d) { L.tile3d = []; for (let y = 0; y < mapH; y++) L.tile3d.push(new Array(mapW).fill(false)); }
+  if (!L.warpOverlay) { L.warpOverlay = []; for (let y = 0; y < mapH; y++) L.warpOverlay.push(new Array(mapW).fill(false)); }
+  if (L.warpTarget === undefined) L.warpTarget = -1;
+  tile3d = L.tile3d;
+  warpOverlay = L.warpOverlay;
+  spawnX = L.spawnX; spawnY = L.spawnY;
+  undoStack = L.undoStack; redoStack = L.redoStack;
+  document.getElementById('map-w').value = mapW;
+  document.getElementById('map-h').value = mapH;
+  document.getElementById('level-name').value = L.name;
+  document.getElementById('level-hidden').checked = !!L.isHidden;
+  loadDialogue();
+}
+
+function syncToLevel() {
+  const L = cur();
+  L.mapW = mapW; L.mapH = mapH;
+  L.tilemap = tilemap; L.coins = coins;
+  L.enemies = enemies;
+  L.tile3d = tile3d; L.warpOverlay = warpOverlay;
+  L.spawnX = spawnX; L.spawnY = spawnY;
+  L.undoStack = undoStack; L.redoStack = redoStack;
+}
+
+function switchLevel(idx) {
+  syncToLevel();
+  currentLevelIdx = idx;
+  syncFromLevel();
+  buildLevelTabs();
+  autoSave();
+  render();
+}
+
+function addLevel() {
+  const world = prompt('Which world? (1 = standard 80×16, 2 = tall 80×32 with double jump, 0 = secret)', '1');
+  if (world === null) return; // cancelled
+  const w = parseInt(world) || 1;
+  const mh = w >= 2 ? 32 : 16;
+  syncToLevel();
+
+  // Calculate level index and display name
+  const gameLevels = levels.filter(l => !l.isMenu);
+  const newIndex = gameLevels.length;
+  let displayName;
+  if (w === 0) {
+    displayName = '???';
+  } else {
+    const worldLevels = gameLevels.filter(l => l.world === w);
+    displayName = w + '-' + (worldLevels.length + 1);
+  }
+
+  levels.push(createLevel(displayName, 80, mh, w, false, newIndex));
+  currentLevelIdx = levels.length - 1;
+  syncFromLevel();
+  buildLevelTabs();
+  panX = 20;
+  panY = -(mapH * TILE_SIZE * zoom - canvas.height) + 40;
+  autoSave();
+  render();
+}
+
+function addMenuLevel() {
+  syncToLevel();
+  let idx = findMenuLevelIdx();
+  if (idx < 0) {
+    const L = createLevel('Menu BG', 80, 16, 1, true);
+    // Use spawn fields to store the runner's starting position
+    L.spawnX = 2 * TILE_SIZE;
+    L.spawnY = (16 - 3) * TILE_SIZE - 28;
+    levels.push(L);
+    idx = levels.length - 1;
+  }
+  currentLevelIdx = idx;
+  syncFromLevel();
+  buildLevelTabs();
+  panX = 20;
+  panY = 0;
+  autoSave();
+  render();
+}
+
+function deleteLevel() {
+  if (cur().isMenu) {
+    if (!confirm('Delete the Menu BG scene?')) return;
+    levels.splice(currentLevelIdx, 1);
+    currentLevelIdx = 0;
+    syncFromLevel();
+    buildLevelTabs();
+    autoSave();
+    render();
+    return;
+  }
+  if (playableLevels().length <= 1) { alert('Cannot delete the only playable level.'); return; }
+  if (!confirm('Delete "' + cur().name + '"?')) return;
+  levels.splice(currentLevelIdx, 1);
+  if (currentLevelIdx >= levels.length) currentLevelIdx = levels.length - 1;
+  syncFromLevel();
+  buildLevelTabs();
+  autoSave();
+  render();
+}
+
+function renameCurrent() {
+  cur().name = document.getElementById('level-name').value || 'Untitled';
+  buildLevelTabs();
+  autoSave();
+}
+
+function toggleHidden() {
+  cur().isHidden = document.getElementById('level-hidden').checked;
+  buildLevelTabs();
+  autoSave();
+}
+
+function toggleDialoguePre() {
+  const enabled = document.getElementById('dlg-pre-enable').checked;
+  document.getElementById('dlg-pre-boxes').style.display = enabled ? 'block' : 'none';
+  cur().dialoguePreEnabled = enabled;
+  autoSave();
+}
+
+function toggleDialoguePost() {
+  const enabled = document.getElementById('dlg-post-enable').checked;
+  document.getElementById('dlg-post-boxes').style.display = enabled ? 'block' : 'none';
+  cur().dialoguePostEnabled = enabled;
+  autoSave();
+}
+
+function saveDialogue() {
+  if (!cur().dialoguePre) cur().dialoguePre = ['', '', '', ''];
+  if (!cur().dialoguePost) cur().dialoguePost = ['', '', '', ''];
+  cur().dialoguePre[0] = document.getElementById('dlg-pre-1').value;
+  cur().dialoguePre[1] = document.getElementById('dlg-pre-2').value;
+  cur().dialoguePre[2] = document.getElementById('dlg-pre-3').value;
+  cur().dialoguePre[3] = document.getElementById('dlg-pre-4').value;
+  cur().dialoguePost[0] = document.getElementById('dlg-post-1').value;
+  cur().dialoguePost[1] = document.getElementById('dlg-post-2').value;
+  cur().dialoguePost[2] = document.getElementById('dlg-post-3').value;
+  cur().dialoguePost[3] = document.getElementById('dlg-post-4').value;
+  autoSave();
+}
+
+function loadDialogue() {
+  const L = cur();
+  // Pre-level dialogue
+  const preEnabled = !!L.dialoguePreEnabled;
+  document.getElementById('dlg-pre-enable').checked = preEnabled;
+  document.getElementById('dlg-pre-boxes').style.display = preEnabled ? 'block' : 'none';
+  const pre = L.dialoguePre || ['', '', '', ''];
+  document.getElementById('dlg-pre-1').value = pre[0] || '';
+  document.getElementById('dlg-pre-2').value = pre[1] || '';
+  document.getElementById('dlg-pre-3').value = pre[2] || '';
+  document.getElementById('dlg-pre-4').value = pre[3] || '';
+  // Post-level dialogue
+  const postEnabled = !!L.dialoguePostEnabled;
+  document.getElementById('dlg-post-enable').checked = postEnabled;
+  document.getElementById('dlg-post-boxes').style.display = postEnabled ? 'block' : 'none';
+  const post = L.dialoguePost || ['', '', '', ''];
+  document.getElementById('dlg-post-1').value = post[0] || '';
+  document.getElementById('dlg-post-2').value = post[1] || '';
+  document.getElementById('dlg-post-3').value = post[2] || '';
+  document.getElementById('dlg-post-4').value = post[3] || '';
+}
+
+function buildLevelTabs() {
+  const container = document.getElementById('level-tabs');
+  container.innerHTML = '';
+
+  // Group levels by world for better organization
+  let lastWorld = null;
+
+  levels.forEach((lv, i) => {
+    // Add world separator when world changes (and not menu)
+    if (!lv.isMenu && lv.world !== lastWorld && lastWorld !== null) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'width:100%; height:4px;';
+      container.appendChild(sep);
+    }
+    lastWorld = lv.isMenu ? null : lv.world;
+
+    const tab = document.createElement('div');
+    tab.className = 'level-tab' + (i === currentLevelIdx ? ' active' : '');
+
+    // Build badge based on level properties
+    let badge = '';
+    if (lv.isMenu) {
+      badge = '<span style="color:#64c8ff;font-size:9px;margin-right:3px">[MENU]</span>';
+    } else if (lv.isHidden) {
+      badge = '<span style="color:#ff6eb4;font-size:9px;margin-right:3px">[SECRET]</span>';
+    } else if (lv.world === 0) {
+      badge = '<span style="color:#ff6eb4;font-size:9px;margin-right:3px">[SECRET]</span>';
+    }
+
+    // Display name: use levelIndex badge for clarity
+    let displayName = lv.name;
+    if (!lv.isMenu && lv.levelIndex !== undefined) {
+      displayName = `[${lv.levelIndex}] ${lv.name}`;
+    }
+
+    tab.innerHTML = `${badge}<span>${displayName}</span>`;
+    tab.onclick = () => switchLevel(i);
+    container.appendChild(tab);
+  });
+}
+
+let selectedTile = 1;
+let currentTool = 'paint';
+let zoom = 1.0;
+let panX = 0, panY = 0;
+let isPanning = false;
+let isPainting = false;
+let panStartX, panStartY, panStartPX, panStartPY;
+let trackpadMode = false;
+let spacePanHeld = false;
+let altZoomHeld = false;
+let tilesetImg = null;
+let showGrid = true;
+let currentStroke = null;
+
+syncFromLevel();
+buildLevelTabs();
+
+// ═══════════════════════════════════════════════════
+// Canvas setup
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const mainDiv = document.getElementById('main');
+
+function resizeCanvas() {
+  canvas.width = mainDiv.clientWidth;
+  canvas.height = mainDiv.clientHeight;
+  render();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ═══════════════════════════════════════════════════
+// Palette UI
+// ═══════════════════════════════════════════════════
+function buildPalette() {
+  const pal = document.getElementById('palette');
+  pal.innerHTML = '';
+  for (let i = 1; i < TILE_DEFS.length; i++) {
+    const t = TILE_DEFS[i];
+    const btn = document.createElement('div');
+    btn.className = 'palette-btn' + (i === selectedTile ? ' active' : '');
+    btn.dataset.tile = i;
+    btn.innerHTML = `<div class="palette-swatch" style="background:${t.color}"></div>
+                     <span class="palette-label">${t.key}: ${t.name}</span>`;
+    btn.onclick = () => { selectedTile = i; currentTool = 'paint'; updateUI(); };
+    pal.appendChild(btn);
+  }
+}
+
+function updateUI() {
+  document.querySelectorAll('.palette-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.tile === selectedTile);
+  });
+  document.querySelectorAll('.tool-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tool === currentTool);
+  });
+  const toggle = document.getElementById('trackpad-mode');
+  if (toggle) toggle.checked = trackpadMode;
+  mainDiv.classList.toggle('trackpad-mode', trackpadMode);
+  mainDiv.classList.toggle('space-pan', trackpadMode && spacePanHeld);
+  document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
+}
+
+function setTrackpadMode(enabled) {
+  trackpadMode = !!enabled;
+  if (!trackpadMode) {
+    spacePanHeld = false;
+    isPanning = false;
+  }
+  updateUI();
+}
+
+function shouldZoomWheelInTrackpadMode(e) {
+  return !!(altZoomHeld || e.altKey);
+}
+
+document.querySelectorAll('.tool-btn').forEach(b => {
+  b.onclick = () => { currentTool = b.dataset.tool; updateUI(); };
+});
+document.getElementById('trackpad-mode')?.addEventListener('change', (e) => {
+  setTrackpadMode(!!e.target.checked);
+});
+
+buildPalette();
+
+// ═══════════════════════════════════════════════════
+// Rendering
+// ═══════════════════════════════════════════════════
+function render() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.save();
+  ctx.translate(panX, panY);
+  ctx.scale(zoom, zoom);
+
+  const cellSize = TILE_SIZE;
+  const vx0 = -panX / zoom, vy0 = -panY / zoom;
+  const vx1 = vx0 + w / zoom, vy1 = vy0 + h / zoom;
+  const col0 = Math.max(0, Math.floor(vx0 / cellSize));
+  const col1 = Math.min(mapW - 1, Math.floor(vx1 / cellSize));
+  const row0 = Math.max(0, Math.floor(vy0 / cellSize));
+  const row1 = Math.min(mapH - 1, Math.floor(vy1 / cellSize));
+
+  // Draw tiles
+  for (let y = row0; y <= row1; y++) {
+    for (let x = col0; x <= col1; x++) {
+      const t = tilemap[y][x];
+      const px = x * cellSize, py = y * cellSize;
+      if (t > 0 && tilesetImg && TILE_DEFS[t].uv) {
+        const uv = TILE_DEFS[t].uv;
+        const sx = (uv.col - 1) * TILE_SIZE;
+        const sy = (uv.row - 1) * TILE_SIZE;
+        ctx.drawImage(tilesetImg, sx, sy, TILE_SIZE, TILE_SIZE, px, py, cellSize, cellSize);
+      } else if (t > 0) {
+        ctx.fillStyle = TILE_DEFS[t].color;
+        ctx.fillRect(px, py, cellSize, cellSize);
+      }
+    }
+  }
+
+  // Grid lines
+  if (showGrid) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1 / zoom;
+    for (let x = col0; x <= col1 + 1; x++) {
+      ctx.beginPath(); ctx.moveTo(x * cellSize, row0 * cellSize); ctx.lineTo(x * cellSize, (row1 + 1) * cellSize); ctx.stroke();
+    }
+    for (let y = row0; y <= row1 + 1; y++) {
+      ctx.beginPath(); ctx.moveTo(col0 * cellSize, y * cellSize); ctx.lineTo((col1 + 1) * cellSize, y * cellSize); ctx.stroke();
+    }
+  }
+
+  // Map border
+  ctx.strokeStyle = '#00b4d8';
+  ctx.lineWidth = 2 / zoom;
+  ctx.strokeRect(0, 0, mapW * cellSize, mapH * cellSize);
+
+  // Coins
+  ctx.fillStyle = '#FFD700';
+  ctx.strokeStyle = '#B8860B';
+  ctx.lineWidth = 2 / zoom;
+  for (const c of coins) {
+    ctx.beginPath();
+    ctx.arc(c.x + 7, c.y + 7, 7, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+  }
+
+  // Enemies
+  for (const en of enemies) {
+    ctx.fillStyle = '#CC3333';
+    ctx.strokeStyle = '#881111';
+    ctx.lineWidth = 2 / zoom;
+    ctx.fillRect(en.x, en.y, 24, 24);
+    ctx.strokeRect(en.x, en.y, 24, 24);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(en.x + 4, en.y + 6, 5, 5);
+    ctx.fillRect(en.x + 15, en.y + 6, 5, 5);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(en.x + 6, en.y + 8, 2, 2);
+    ctx.fillRect(en.x + 17, en.y + 8, 2, 2);
+  }
+
+  // Moving platform range visualization
+  for (let y = row0; y <= row1; y++) {
+    for (let x = col0; x <= col1; x++) {
+      if (tilemap[y][x] === 8) { // TILE_MOVING
+        const px = x * cellSize, py = y * cellSize;
+        const rangeW = 3 * cellSize; // 3-tile patrol range
+        // Draw track line
+        ctx.strokeStyle = 'rgba(155, 89, 182, 0.5)';
+        ctx.lineWidth = 2 / zoom;
+        ctx.setLineDash([4 / zoom, 4 / zoom]);
+        const midY = py + cellSize * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + cellSize * 0.5, midY);
+        ctx.lineTo(px + cellSize * 0.5 + rangeW, midY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Ghost at end position
+        ctx.globalAlpha = 0.3;
+        if (tilesetImg && TILE_DEFS[8].uv) {
+          const uv = TILE_DEFS[8].uv;
+          const sx = (uv.col - 1) * TILE_SIZE;
+          const sy2 = (uv.row - 1) * TILE_SIZE;
+          ctx.drawImage(tilesetImg, sx, sy2, TILE_SIZE, TILE_SIZE, px + rangeW, py, cellSize, cellSize);
+        } else {
+          ctx.fillStyle = TILE_DEFS[8].color;
+          ctx.fillRect(px + rangeW, py, cellSize, cellSize);
+        }
+        ctx.globalAlpha = 1.0;
+        // Arrow
+        ctx.fillStyle = 'rgba(155, 89, 182, 0.8)';
+        ctx.beginPath();
+        ctx.moveTo(px + rangeW - 4 / zoom, midY - 6 / zoom);
+        ctx.lineTo(px + rangeW + cellSize * 0.5, midY);
+        ctx.lineTo(px + rangeW - 4 / zoom, midY + 6 / zoom);
+        ctx.fill();
+      }
+    }
+  }
+
+  // One-way platform arrows (upward arrow overlay)
+  ctx.fillStyle = 'rgba(107, 174, 214, 0.7)';
+  for (let y = row0; y <= row1; y++) {
+    for (let x = col0; x <= col1; x++) {
+      if (tilemap[y][x] === 5) { // TILE_PLAT_ALT / one-way
+        const px = x * cellSize + cellSize * 0.5;
+        const py2 = y * cellSize + 4 / zoom;
+        const sz = 5 / zoom;
+        ctx.beginPath();
+        ctx.moveTo(px, py2);
+        ctx.lineTo(px - sz, py2 + sz);
+        ctx.lineTo(px + sz, py2 + sz);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Crumble tile warning cracks overlay
+  ctx.strokeStyle = 'rgba(180, 140, 60, 0.6)';
+  ctx.lineWidth = 1.5 / zoom;
+  for (let y = row0; y <= row1; y++) {
+    for (let x = col0; x <= col1; x++) {
+      if (tilemap[y][x] === 7) { // TILE_CRUMBLE
+        const px = x * cellSize, py2 = y * cellSize;
+        ctx.beginPath();
+        ctx.moveTo(px + cellSize * 0.2, py2 + cellSize * 0.3);
+        ctx.lineTo(px + cellSize * 0.5, py2 + cellSize * 0.5);
+        ctx.lineTo(px + cellSize * 0.4, py2 + cellSize * 0.8);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px + cellSize * 0.7, py2 + cellSize * 0.2);
+        ctx.lineTo(px + cellSize * 0.6, py2 + cellSize * 0.6);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // 3D tile overlay (cyan border + "3D" label)
+  for (let y = row0; y <= row1; y++) {
+    for (let x = col0; x <= col1; x++) {
+      if (tile3d[y] && tile3d[y][x]) {
+        const px = x * cellSize, py2 = y * cellSize;
+        ctx.strokeStyle = 'rgba(0, 220, 255, 0.8)';
+        ctx.lineWidth = 2.5 / zoom;
+        ctx.strokeRect(px + 2/zoom, py2 + 2/zoom, cellSize - 4/zoom, cellSize - 4/zoom);
+        ctx.fillStyle = 'rgba(0, 220, 255, 0.25)';
+        ctx.fillRect(px, py2, cellSize, cellSize);
+        ctx.fillStyle = '#00ffff';
+        ctx.font = `bold ${10/zoom}px sans-serif`;
+        ctx.fillText('3D', px + 2/zoom, py2 + cellSize - 3/zoom);
+      }
+    }
+  }
+
+  // Warp tile overlay (teal diamond + "W" label)
+  for (let y = row0; y <= row1; y++) {
+    for (let x = col0; x <= col1; x++) {
+      if (warpOverlay[y] && warpOverlay[y][x]) {
+        const px = x * cellSize, py2 = y * cellSize;
+        const cx2 = px + cellSize/2, cy2 = py2 + cellSize/2;
+        ctx.fillStyle = 'rgba(0, 206, 209, 0.4)';
+        ctx.beginPath();
+        ctx.moveTo(cx2, py2 + 3/zoom);
+        ctx.lineTo(px + cellSize - 3/zoom, cy2);
+        ctx.lineTo(cx2, py2 + cellSize - 3/zoom);
+        ctx.lineTo(px + 3/zoom, cy2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#00CED1';
+        ctx.lineWidth = 2 / zoom;
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${11/zoom}px sans-serif`;
+        ctx.fillText('W', px + cellSize/2 - 4/zoom, py2 + cellSize/2 + 4/zoom);
+      }
+    }
+  }
+
+  // Spawn
+  ctx.fillStyle = '#00FF88';
+  ctx.strokeStyle = '#008844';
+  ctx.lineWidth = 2 / zoom;
+  ctx.fillRect(spawnX, spawnY, 16, 28);
+  ctx.strokeRect(spawnX, spawnY, 16, 28);
+  ctx.fillStyle = '#fff';
+  ctx.font = `10px sans-serif`;
+  ctx.fillText('P', spawnX + 3, spawnY + 18);
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════
+// Mouse → world coords
+// ═══════════════════════════════════════════════════
+function screenToWorld(sx, sy) {
+  return { x: (sx - panX) / zoom, y: (sy - panY) / zoom };
+}
+function worldToTile(wx, wy) {
+  return { tx: Math.floor(wx / TILE_SIZE), ty: Math.floor(wy / TILE_SIZE) };
+}
+function inBounds(tx, ty) {
+  return tx >= 0 && tx < mapW && ty >= 0 && ty < mapH;
+}
+
+// ═══════════════════════════════════════════════════
+// Undo/Redo
+// ═══════════════════════════════════════════════════
+function pushUndo(action) {
+  undoStack.push(action);
+  if (undoStack.length > 200) undoStack.shift();
+  redoStack.length = 0;
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const action = undoStack.pop();
+  if (action.type === 'tiles') {
+    for (const c of action.changes) tilemap[c.y][c.x] = c.oldTile;
+  } else if (action.type === 'coin-add') {
+    coins = coins.filter(c => c !== action.coin);
+    cur().coins = coins;
+  } else if (action.type === 'coin-remove') {
+    coins.push(action.coin);
+    cur().coins = coins;
+  } else if (action.type === 'enemy-add') {
+    enemies = enemies.filter(e => e !== action.enemy);
+    cur().enemies = enemies;
+  } else if (action.type === 'enemy-remove') {
+    enemies.push(action.enemy);
+    cur().enemies = enemies;
+  } else if (action.type === 'spawn') {
+    spawnX = action.oldX; spawnY = action.oldY;
+    cur().spawnX = spawnX; cur().spawnY = spawnY;
+  }
+  redoStack.push(action);
+  autoSave();
+  render();
+}
+
+function redo() {
+  if (!redoStack.length) return;
+  const action = redoStack.pop();
+  if (action.type === 'tiles') {
+    for (const c of action.changes) tilemap[c.y][c.x] = c.newTile;
+  } else if (action.type === 'coin-add') {
+    coins.push(action.coin);
+    cur().coins = coins;
+  } else if (action.type === 'coin-remove') {
+    coins = coins.filter(c => c !== action.coin);
+    cur().coins = coins;
+  } else if (action.type === 'enemy-add') {
+    enemies.push(action.enemy);
+    cur().enemies = enemies;
+  } else if (action.type === 'enemy-remove') {
+    enemies = enemies.filter(e => e !== action.enemy);
+    cur().enemies = enemies;
+  } else if (action.type === 'spawn') {
+    spawnX = action.newX; spawnY = action.newY;
+    cur().spawnX = spawnX; cur().spawnY = spawnY;
+  }
+  undoStack.push(action);
+  autoSave();
+  render();
+}
+
+// ═══════════════════════════════════════════════════
+// Painting
+// ═══════════════════════════════════════════════════
+function setTile(tx, ty, value) {
+  if (!inBounds(tx, ty)) return;
+  const old = tilemap[ty][tx];
+  if (old === value) return;
+  tilemap[ty][tx] = value;
+  if (currentStroke) {
+    currentStroke.changes.push({ x: tx, y: ty, oldTile: old, newTile: value });
+  }
+}
+
+function floodFill(tx, ty, newTile) {
+  if (!inBounds(tx, ty)) return;
+  const oldTile = tilemap[ty][tx];
+  if (oldTile === newTile) return;
+  const changes = [];
+  const stack = [[tx, ty]];
+  const visited = new Set();
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    const key = cy * mapW + cx;
+    if (visited.has(key)) continue;
+    if (!inBounds(cx, cy)) continue;
+    if (tilemap[cy][cx] !== oldTile) continue;
+    visited.add(key);
+    changes.push({ x: cx, y: cy, oldTile, newTile });
+    tilemap[cy][cx] = newTile;
+    stack.push([cx-1, cy], [cx+1, cy], [cx, cy-1], [cx, cy+1]);
+  }
+  if (changes.length) pushUndo({ type: 'tiles', changes });
+}
+
+// ═══════════════════════════════════════════════════
+// Mouse events
+// ═══════════════════════════════════════════════════
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const { x: wx, y: wy } = screenToWorld(sx, sy);
+  const { tx, ty } = worldToTile(wx, wy);
+
+  const wantsPan = e.button === 1 || (trackpadMode && e.button === 0 && spacePanHeld);
+  if (wantsPan) {
+    isPanning = true;
+    panStartX = e.clientX; panStartY = e.clientY;
+    panStartPX = panX; panStartPY = panY;
+    e.preventDefault();
+    return;
+  }
+
+  // Right-click: erase tiles only (never coins/spawn)
+  if (e.button === 2 || (trackpadMode && e.button === 0 && e.shiftKey)) {
+    if (inBounds(tx, ty) && tilemap[ty][tx] !== 0) {
+      isPainting = true;
+      currentStroke = { changes: [] };
+      setTile(tx, ty, 0);
+      render();
+    }
+    return;
+  }
+
+  if (e.button === 0) {
+    if (currentTool === 'paint') {
+      isPainting = true;
+      currentStroke = { changes: [] };
+      setTile(tx, ty, selectedTile);
+      render();
+    } else if (currentTool === 'erase') {
+      // Erase tool: only erases tiles, ignores coins/spawn
+      if (inBounds(tx, ty) && tilemap[ty][tx] !== 0) {
+        isPainting = true;
+        currentStroke = { changes: [] };
+        setTile(tx, ty, 0);
+        render();
+      }
+    } else if (currentTool === 'fill') {
+      floodFill(tx, ty, selectedTile);
+      render();
+    } else if (currentTool === 'coin') {
+      const cx = tx * TILE_SIZE + 9, cy = ty * TILE_SIZE + 9;
+      const existing = coins.findIndex(c => Math.abs(c.x - cx) < 14 && Math.abs(c.y - cy) < 14);
+      if (existing >= 0) {
+        const removed = coins.splice(existing, 1)[0];
+        pushUndo({ type: 'coin-remove', coin: removed });
+      } else {
+        const coin = { x: cx, y: cy };
+        coins.push(coin);
+        pushUndo({ type: 'coin-add', coin });
+      }
+      cur().coins = coins;
+      autoSave();
+      render();
+    } else if (currentTool === 'enemy') {
+      // Snap to tile grid, offset to feet position
+      const ex = tx * TILE_SIZE + 4;
+      const ey = ty * TILE_SIZE + (TILE_SIZE - 24);
+      const existing = enemies.findIndex(e => Math.abs(e.x - ex) < 24 && Math.abs(e.y - ey) < 24);
+      if (existing >= 0) {
+        const removed = enemies.splice(existing, 1)[0];
+        pushUndo({ type: 'enemy-remove', enemy: removed });
+      } else {
+        const enemy = { x: ex, y: ey };
+        enemies.push(enemy);
+        pushUndo({ type: 'enemy-add', enemy });
+      }
+      cur().enemies = enemies;
+      autoSave();
+      render();
+    } else if (currentTool === 'spawn') {
+      const oldX = spawnX, oldY = spawnY;
+      spawnX = wx - 8; spawnY = wy - 14;
+      cur().spawnX = spawnX; cur().spawnY = spawnY;
+      pushUndo({ type: 'spawn', oldX, oldY, newX: spawnX, newY: spawnY });
+      autoSave();
+      render();
+    } else if (currentTool === 'tile3d') {
+      if (inBounds(tx, ty)) {
+        tile3d[ty][tx] = !tile3d[ty][tx];
+        autoSave();
+        render();
+      }
+    } else if (currentTool === 'warp') {
+      if (inBounds(tx, ty)) {
+        warpOverlay[ty][tx] = !warpOverlay[ty][tx];
+        // Prompt for warp target level when placing (not removing)
+        if (warpOverlay[ty][tx]) {
+          const target = prompt('Warp target level index (0-based):', cur().warpTarget >= 0 ? cur().warpTarget : '10');
+          if (target !== null) cur().warpTarget = parseInt(target) || 0;
+        }
+        autoSave();
+        render();
+      }
+    }
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const { x: wx, y: wy } = screenToWorld(sx, sy);
+  const { tx, ty } = worldToTile(wx, wy);
+
+  if (inBounds(tx, ty)) {
+    const tname = TILE_DEFS[tilemap[ty][tx]].name;
+    document.getElementById('status').textContent =
+      `Tile (${tx}, ${ty}) — ${tname}  |  World (${Math.round(wx)}, ${Math.round(wy)})  |  ${cur().name}`;
+  }
+
+  if (isPanning) {
+    panX = panStartPX + (e.clientX - panStartX);
+    panY = panStartPY + (e.clientY - panStartY);
+    render();
+    return;
+  }
+
+  if (isPainting) {
+    const trackpadEraseDrag = trackpadMode && (e.buttons & 1) && e.shiftKey;
+    if ((e.buttons & 2) || trackpadEraseDrag) {
+      // Right-drag: erase tiles only
+      if (inBounds(tx, ty) && tilemap[ty][tx] !== 0) {
+        setTile(tx, ty, 0);
+        render();
+      }
+    } else if (currentTool === 'erase') {
+      if (inBounds(tx, ty) && tilemap[ty][tx] !== 0) {
+        setTile(tx, ty, 0);
+        render();
+      }
+    } else {
+      setTile(tx, ty, selectedTile);
+      render();
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (e.button === 1 || (trackpadMode && e.button === 0)) isPanning = false;
+  if (isPainting) {
+    isPainting = false;
+    if (currentStroke && currentStroke.changes.length) {
+      pushUndo({ type: 'tiles', ...currentStroke });
+      autoSave();
+    }
+    currentStroke = null;
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  isPanning = false;
+  if (isPainting) {
+    isPainting = false;
+    if (currentStroke && currentStroke.changes.length) {
+      pushUndo({ type: 'tiles', ...currentStroke });
+    }
+    currentStroke = null;
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (!e.altKey) altZoomHeld = false;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  if (!trackpadMode || shouldZoomWheelInTrackpadMode(e)) {
+    const oldZoom = zoom;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    zoom = Math.max(0.15, Math.min(5, zoom * delta));
+    panX = mx - (mx - panX) * (zoom / oldZoom);
+    panY = my - (my - panY) * (zoom / oldZoom);
+    updateUI();
+  } else {
+    panX -= e.deltaX;
+    panY -= e.deltaY;
+    updateUI();
+  }
+  render();
+}, { passive: false });
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ═══════════════════════════════════════════════════
+// Keyboard shortcuts
+// ═══════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Alt') {
+    altZoomHeld = true;
+    e.preventDefault();
+    return;
+  }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space' && trackpadMode) {
+    if (!spacePanHeld) {
+      spacePanHeld = true;
+      updateUI();
+    }
+    e.preventDefault();
+    return;
+  }
+  const panStep = e.shiftKey ? 72 : 36;
+  if (e.key === 'ArrowLeft') { panX += panStep; render(); e.preventDefault(); return; }
+  if (e.key === 'ArrowRight') { panX -= panStep; render(); e.preventDefault(); return; }
+  if (e.key === 'ArrowUp') { panY += panStep; render(); e.preventDefault(); return; }
+  if (e.key === 'ArrowDown') { panY -= panStep; render(); e.preventDefault(); return; }
+  if (e.key === '+' || e.key === '=') { zoom = Math.min(5, zoom * 1.1); updateUI(); render(); e.preventDefault(); return; }
+  if (e.key === '-' || e.key === '_') { zoom = Math.max(0.15, zoom * 0.9); updateUI(); render(); e.preventDefault(); return; }
+  if (e.key === 't' || e.key === 'T') { setTrackpadMode(!trackpadMode); e.preventDefault(); return; }
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); return; }
+  if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); return; }
+  if (e.key >= '1' && e.key <= '9') { selectedTile = +e.key; currentTool = 'paint'; updateUI(); }
+  if (e.key === 'e' || e.key === 'E') { currentTool = 'erase'; updateUI(); }
+  if (e.key === 'f' || e.key === 'F') { currentTool = 'fill'; updateUI(); }
+  if (e.key === 'c' || e.key === 'C') { currentTool = 'coin'; updateUI(); }
+  if (e.key === 'n' || e.key === 'N') { currentTool = 'enemy'; updateUI(); }
+  if (e.key === 's' && !e.ctrlKey) { currentTool = 'spawn'; updateUI(); }
+  if (e.key === 'd' || e.key === 'D') { currentTool = 'tile3d'; updateUI(); }
+  if (e.key === 'w' || e.key === 'W') { currentTool = 'warp'; updateUI(); }
+  if (e.key === 'g' || e.key === 'G') { showGrid = !showGrid; render(); }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Alt') {
+    altZoomHeld = false;
+    e.preventDefault();
+    return;
+  }
+  if (e.code === 'Space' && trackpadMode && spacePanHeld) {
+    spacePanHeld = false;
+    isPanning = false;
+    updateUI();
+  }
+});
+window.addEventListener('blur', () => { altZoomHeld = false; });
+
+// ═══════════════════════════════════════════════════
+// Tileset loading
+// ═══════════════════════════════════════════════════
+function loadTileset(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => { tilesetImg = img; render(); };
+  img.src = URL.createObjectURL(file);
+}
+
+// ═══════════════════════════════════════════════════
+// Map resize / clear
+// ═══════════════════════════════════════════════════
+function resizeMap() {
+  const newW = Math.max(10, +document.getElementById('map-w').value || 80);
+  const newH = Math.max(5, +document.getElementById('map-h').value || 16);
+  const newMap = [];
+  const new3d = [];
+  const newWarp = [];
+  for (let y = 0; y < newH; y++) {
+    const row = new Array(newW).fill(0);
+    const row3d = new Array(newW).fill(false);
+    const rowWarp = new Array(newW).fill(false);
+    for (let x = 0; x < Math.min(newW, mapW); x++) {
+      if (y < mapH) {
+        row[x] = tilemap[y][x];
+        if (tile3d[y]) row3d[x] = tile3d[y][x] || false;
+        if (warpOverlay[y]) rowWarp[x] = warpOverlay[y][x] || false;
+      }
+    }
+    newMap.push(row);
+    new3d.push(row3d);
+    newWarp.push(rowWarp);
+  }
+  tilemap = newMap;
+  tile3d = new3d;
+  warpOverlay = newWarp;
+  mapW = newW; mapH = newH;
+  undoStack.length = 0; redoStack.length = 0;
+  syncToLevel();
+  autoSave();
+  render();
+}
+
+function clearMap() {
+  if (!confirm('Clear "' + cur().name + '"?')) return;
+  for (let y = 0; y < mapH; y++) {
+    tilemap[y].fill(0);
+    if (tile3d[y]) tile3d[y].fill(false);
+    if (warpOverlay[y]) warpOverlay[y].fill(false);
+  }
+  cur().warpTarget = -1;
+  coins.length = 0;
+  enemies.length = 0;
+  spawnX = 1.5 * TILE_SIZE;
+  spawnY = (mapH - 2) * TILE_SIZE - 28;
+  undoStack.length = 0; redoStack.length = 0;
+  syncToLevel();
+  autoSave();
+  render();
+}
+
+// ═══════════════════════════════════════════════════
+// Export C++ (single level)
+// ═══════════════════════════════════════════════════
+const tileNames = ['TILE_EMPTY', 'TILE_GROUND', 'TILE_FILL', 'TILE_SPIKE', 'TILE_PLATFORM', 'TILE_PLAT_ALT', 'TILE_BG_DECOR', 'TILE_CRUMBLE', 'TILE_MOVING', 'TILE_WARP'];
+
+// ═══════════════════════════════════════════════════
+// File System Access API — sync to main.cpp
+// ═══════════════════════════════════════════════════
+let fileHandle = null;
+
+// Persist file handle in IndexedDB so it survives page refreshes
+function openHandleDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('editorHandles', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('handles');
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveFileHandle(handle) {
+  const db = await openHandleDB();
+  const tx = db.transaction('handles', 'readwrite');
+  tx.objectStore('handles').put(handle, 'mainCpp');
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadFileHandle() {
+  const db = await openHandleDB();
+  const tx = db.transaction('handles', 'readonly');
+  const req = tx.objectStore('handles').get('mainCpp');
+  return new Promise((resolve) => {
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => resolve(null);
+  });
+}
+
+// Try to restore handle on startup
+(async () => {
+  try {
+    const h = await loadFileHandle();
+    if (h) {
+      // Verify we still have permission
+      const perm = await h.queryPermission({ mode: 'readwrite' });
+      if (perm === 'granted') {
+        fileHandle = h;
+        document.getElementById('status').textContent = 'main.cpp handle restored';
+        setTimeout(() => { document.getElementById('status').textContent = 'Ready'; }, 2000);
+      }
+    }
+  } catch (e) { /* ignore */ }
+})();
+
+function generateSyncBlock() {
+  syncToLevel();
+  const parts = [];
+  parts.push('// @@EDITOR_LEVELS_START@@');
+
+  // Generate LEVEL_INFO table from level metadata
+  const playable = levels.filter(l => !l.isMenu);
+  if (playable.length > 0) {
+    parts.push('');
+    parts.push('// Level metadata — auto-generated from editor');
+    parts.push('static const int EDITOR_LEVEL_COUNT = ' + playable.length + ';');
+    parts.push('#undef LEVEL_COUNT_MACRO');
+    parts.push('#define LEVEL_COUNT_MACRO EDITOR_LEVEL_COUNT');
+    parts.push('static const LevelInfo EDITOR_LEVEL_INFO[EDITOR_LEVEL_COUNT] = {');
+    for (let i = 0; i < playable.length; i++) {
+      const lv = playable[i];
+      const hidden = lv.isHidden ? 'true' : 'false';
+      // Default par time based on world
+      const parTime = lv.world >= 2 ? '90.0f' : '60.0f';
+      parts.push('\t/* ' + i + ' */ {"' + lv.name + '", ' + (lv.world || 0) + ', ' + hidden + ', ' + parTime + ', ' + lv.mapW + ', ' + lv.mapH + '},');
+    }
+    parts.push('};');
+    parts.push('#undef LEVEL_INFO_MACRO');
+    parts.push('#define LEVEL_INFO_MACRO EDITOR_LEVEL_INFO');
+
+    parts.push('');
+    parts.push('// Secret levels: use LEVEL_INFO[i].isHidden (legacy levelHidden[] disabled by 3DS Studio)');
+  }
+
+  // Emit Menu BG (if one exists), or a default placeholder if none.
+  const menuLv = levels.find(l => l.isMenu);
+  {
+    const lines = [];
+    lines.push('// Menu scene — autogenerated from the editor.');
+    lines.push('static void buildMenuScene() {');
+    lines.push('\tmemset(menuTilemap, TILE_EMPTY, sizeof(menuTilemap));');
+    if (menuLv) {
+      const rows = Math.min(menuLv.mapH, 16);
+      const cols = Math.min(menuLv.mapW, 80);
+      for (let y = 0; y < rows; y++) {
+        let rowTiles = [];
+        let x = 0;
+        while (x < cols) {
+          const t = menuLv.tilemap[y][x];
+          if (t === 0) { x++; continue; }
+          let end = x;
+          while (end + 1 < cols && menuLv.tilemap[y][end + 1] === t) end++;
+          rowTiles.push({ t, x0: x, x1: end });
+          x = end + 1;
+        }
+        if (rowTiles.length === 0) continue;
+        lines.push('\t// Row ' + y);
+        for (const run of rowTiles) {
+          if (run.x0 === run.x1) {
+            lines.push('\tmenuTilemap[' + y + '][' + run.x0 + '] = ' + tileNames[run.t] + ';');
+          } else {
+            lines.push('\tfor (int x = ' + run.x0 + '; x <= ' + run.x1 + '; x++)');
+            lines.push('\t\tmenuTilemap[' + y + '][x] = ' + tileNames[run.t] + ';');
+          }
+        }
+      }
+      lines.push('');
+      lines.push('\t// Runner spawn (uses the spawn marker placed in the editor)');
+      lines.push('\tmenuRunnerStartX = ' + menuLv.spawnX.toFixed(1) + 'f;');
+      lines.push('\tmenuRunnerStartY = ' + menuLv.spawnY.toFixed(1) + 'f;');
+    } else {
+      // No menu scene authored — provide a basic floor so the runner has ground.
+      lines.push('\tfor (int x = 0; x < MENU_MAP_W; x++) {');
+      lines.push('\t\tmenuTilemap[13][x] = TILE_GROUND;');
+      lines.push('\t\tmenuTilemap[14][x] = TILE_FILL;');
+      lines.push('\t\tmenuTilemap[15][x] = TILE_FILL;');
+      lines.push('\t}');
+      lines.push('\tmenuRunnerStartX = 2 * TILE_SIZE;');
+      lines.push('\tmenuRunnerStartY = 13 * TILE_SIZE - 28;');
+    }
+    lines.push('}');
+    parts.push(lines.join('\n'));
+  }
+
+  // Generate individual level functions (playable already defined above)
+  for (let i = 0; i < playable.length; i++) {
+    const lv = playable[i];
+    const funcName = 'buildLevel_' + (i + 1);
+    const hiddenFlag = lv.isHidden ? ', HIDDEN' : '';
+    const worldLabel = lv.world === 0 ? 'Secret' : ('World ' + lv.world);
+    const lines = [];
+    lines.push('// Level ' + i + ': "' + lv.name + '", ' + worldLabel + hiddenFlag);
+    lines.push('static void ' + funcName + '() {');
+    lines.push('\tmemset(tilemap, TILE_EMPTY, sizeof(tilemap));');
+    lines.push('\tnumCoins = 0;');
+    lines.push('\tnumEnemies = 0;');
+    lines.push('\tfor (int i = 0; i < MAX_VFX; i++) vfx[i].active = false;');
+    lines.push('');
+    for (let y = 0; y < lv.mapH; y++) {
+      let rowTiles = [];
+      let x = 0;
+      while (x < lv.mapW) {
+        const t = lv.tilemap[y][x];
+        if (t === 0) { x++; continue; }
+        let end = x;
+        while (end + 1 < lv.mapW && lv.tilemap[y][end + 1] === t) end++;
+        rowTiles.push({ t, x0: x, x1: end });
+        x = end + 1;
+      }
+      if (rowTiles.length === 0) continue;
+      lines.push('\t// Row ' + y);
+      for (const run of rowTiles) {
+        if (run.x0 === run.x1) {
+          lines.push('\ttilemap[' + y + '][' + run.x0 + '] = ' + tileNames[run.t] + ';');
+        } else {
+          lines.push('\tfor (int x = ' + run.x0 + '; x <= ' + run.x1 + '; x++)');
+          lines.push('\t\ttilemap[' + y + '][x] = ' + tileNames[run.t] + ';');
+        }
+      }
+    }
+    if (lv.coins.length) {
+      lines.push('');
+      lines.push('\t// Crackers');
+      for (let ci = 0; ci < lv.coins.length; ci++) {
+        const c = lv.coins[ci];
+        const bob = (ci * 0.3).toFixed(1) + 'f';
+        lines.push('\tcoins[numCoins++] = { { ' + c.x.toFixed(1) + 'f, ' + c.y.toFixed(1) + 'f, 14, 14 }, true, ' + bob + ' };');
+      }
+    }
+    if (lv.enemies && lv.enemies.length) {
+      lines.push('');
+      lines.push('\t// Enemies');
+      for (const en of lv.enemies) {
+        lines.push('\tspawnEnemy(' + en.x.toFixed(1) + 'f, ' + en.y.toFixed(1) + 'f);');
+      }
+    }
+    // 3D tile overlay
+    if (lv.tile3d) {
+      let has3d = false;
+      for (let y = 0; y < lv.mapH && !has3d; y++)
+        for (let x = 0; x < lv.mapW && !has3d; x++)
+          if (lv.tile3d[y] && lv.tile3d[y][x]) has3d = true;
+      if (has3d) {
+        lines.push('');
+        lines.push('\t// 3D tiles');
+        for (let y = 0; y < lv.mapH; y++) {
+          for (let x = 0; x < lv.mapW; x++) {
+            if (lv.tile3d[y] && lv.tile3d[y][x]) {
+              lines.push('\ttile3dMap[' + y + '][' + x + '] = true;');
+            }
+          }
+        }
+      }
+    }
+    // Warp overlay
+    if (lv.warpOverlay) {
+      let hasWarp = false;
+      for (let y = 0; y < lv.mapH && !hasWarp; y++)
+        for (let x = 0; x < lv.mapW && !hasWarp; x++)
+          if (lv.warpOverlay[y] && lv.warpOverlay[y][x]) hasWarp = true;
+      if (hasWarp) {
+        lines.push('');
+        lines.push('\t// Warp tiles');
+        for (let y = 0; y < lv.mapH; y++) {
+          for (let x = 0; x < lv.mapW; x++) {
+            if (lv.warpOverlay[y] && lv.warpOverlay[y][x]) {
+              lines.push('\twarpMap[' + y + '][' + x + '] = true;');
+            }
+          }
+        }
+        if (lv.warpTarget >= 0) {
+          lines.push('\twarpTargetLevel = ' + lv.warpTarget + ';');
+        }
+      }
+    }
+    lines.push('');
+    lines.push('\t// Player spawn');
+    lines.push('\tspawnX = ' + lv.spawnX.toFixed(1) + 'f;');
+    lines.push('\tspawnY = ' + lv.spawnY.toFixed(1) + 'f;');
+
+    // Dialogue
+    if (lv.dialoguePreEnabled && lv.dialoguePre) {
+      let hasPre = false;
+      for (let i = 0; i < 4; i++) if (lv.dialoguePre[i] && lv.dialoguePre[i].trim()) hasPre = true;
+      if (hasPre) {
+        lines.push('');
+        lines.push('\t// Pre-level dialogue');
+        lines.push('\tdialoguePreCount[currentLevel] = 0;');
+        for (let i = 0; i < 4; i++) {
+          if (lv.dialoguePre[i] && lv.dialoguePre[i].trim()) {
+            const text = lv.dialoguePre[i].replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+            lines.push('\tstrncpy(dialoguePre[currentLevel][' + i + '], "' + text + '", MAX_DIALOGUE_CHARS - 1);');
+            lines.push('\tdialoguePreCount[currentLevel]++;');
+          }
+        }
+      }
+    }
+    if (lv.dialoguePostEnabled && lv.dialoguePost) {
+      let hasPost = false;
+      for (let i = 0; i < 4; i++) if (lv.dialoguePost[i] && lv.dialoguePost[i].trim()) hasPost = true;
+      if (hasPost) {
+        lines.push('');
+        lines.push('\t// Post-level dialogue');
+        lines.push('\tdialoguePostCount[currentLevel] = 0;');
+        for (let i = 0; i < 4; i++) {
+          if (lv.dialoguePost[i] && lv.dialoguePost[i].trim()) {
+            const text = lv.dialoguePost[i].replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+            lines.push('\tstrncpy(dialoguePost[currentLevel][' + i + '], "' + text + '", MAX_DIALOGUE_CHARS - 1);');
+            lines.push('\tdialoguePostCount[currentLevel]++;');
+          }
+        }
+      }
+    }
+
+    lines.push('}');
+    parts.push(lines.join('\n'));
+  }
+  // Generate buildLevel() switch with mover scan
+  const sw = [];
+  sw.push('static void buildLevel() {');
+  sw.push('\t// Reset movers and overlay maps for each level build');
+  sw.push('\tnumMovers = 0;');
+  sw.push('\tmemset(tile3dMap, false, sizeof(tile3dMap));');
+  sw.push('\tmemset(warpMap, false, sizeof(warpMap));');
+  sw.push('\twarpTargetLevel = -1;');
+  sw.push('\tswitch (currentLevel) {');
+  for (let i = 0; i < playable.length; i++) {
+    sw.push('\t\tcase ' + i + ': buildLevel_' + (i + 1) + '(); break;');
+  }
+  sw.push('\t\tdefault: buildLevel_1(); break;');
+  sw.push('\t}');
+  sw.push('\t// Scan tilemap for TILE_MOVING markers → spawn moving platforms + clear tile');
+  sw.push('\tfor (int ty = 0; ty < MAP_H; ty++) {');
+  sw.push('\t\tfor (int tx = 0; tx < MAP_W; tx++) {');
+  sw.push('\t\t\tif (tilemap[ty][tx] == TILE_MOVING) {');
+  sw.push('\t\t\t\ttilemap[ty][tx] = TILE_EMPTY;');
+  sw.push('\t\t\t\tspawnMover(tx * TILE_SIZE, ty * TILE_SIZE, 3.0f * TILE_SIZE, 1.0f);');
+  sw.push('\t\t\t}');
+  sw.push('\t\t}');
+  sw.push('\t}');
+  sw.push('}');
+  parts.push(sw.join('\n'));
+  parts.push('// @@EDITOR_LEVELS_END@@');
+  return parts.join('\n\n');
+}
+
+async function syncToFile() {
+  try {
+    if (!fileHandle) {
+      [fileHandle] = await window.showOpenFilePicker({
+        types: [{ description: 'C++ source', accept: { 'text/plain': ['.cpp'] } }],
+        multiple: false,
+      });
+      await saveFileHandle(fileHandle);
+    }
+    // Re-request permission if needed (e.g. restored handle after refresh)
+    const perm = await fileHandle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      const req = await fileHandle.requestPermission({ mode: 'readwrite' });
+      if (req !== 'granted') { alert('File permission denied.'); return; }
+    }
+    // Read current file
+    const file = await fileHandle.getFile();
+    let content = await file.text();
+
+    // Find markers
+    const startMarker = '// @@EDITOR_LEVELS_START@@';
+    const endMarker = '// @@EDITOR_LEVELS_END@@';
+    const startIdx = content.indexOf(startMarker);
+    const endIdx = content.indexOf(endMarker);
+    if (startIdx < 0 || endIdx < 0) {
+      alert('Could not find @@EDITOR_LEVELS_START@@ / @@EDITOR_LEVELS_END@@ markers in the file.\nMake sure you are selecting the correct main.cpp.');
+      fileHandle = null;
+      return;
+    }
+
+    // Replace level block
+    const newBlock = generateSyncBlock();
+    content = content.substring(0, startIdx) + newBlock + content.substring(endIdx + endMarker.length);
+
+    // Update NUM_LEVELS (only selectable levels in level select)
+    const n = playableLevels().length;
+    const total = allGameLevels().length;
+    content = content.replace(
+      /static constexpr int NUM_LEVELS = \d+;/,
+      'static constexpr int NUM_LEVELS = ' + n + ';'
+    );
+    content = content.replace(
+      /static constexpr int TOTAL_LEVELS = \d+;/,
+      'static constexpr int TOTAL_LEVELS = ' + total + ';'
+    );
+
+    // Update levelUnlocked initializer
+    const unlockInit = new Array(n).fill(false);
+    unlockInit[0] = true;
+    content = content.replace(
+      /static bool levelUnlocked\[NUM_LEVELS\] = \{[^}]*\};/,
+      'static bool levelUnlocked[NUM_LEVELS] = { ' + unlockInit.join(', ') + ' };'
+    );
+
+    // Update bestTimes initializer
+    content = content.replace(
+      /static float bestTimes\[NUM_LEVELS\] = \{[^}]*\};/,
+      'static float bestTimes[NUM_LEVELS] = { 0 };'
+    );
+
+    // Write back
+    const writable = await fileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+
+    document.getElementById('status').textContent = 'Synced ' + n + ' level(s) to main.cpp!';
+    setTimeout(() => {
+      document.getElementById('status').textContent = 'Ready';
+    }, 3000);
+  } catch (err) {
+    if (err.name === 'AbortError') return; // user cancelled picker
+    alert('Sync failed: ' + err.message);
+    console.error(err);
+  }
+}
+
+function generateCppForLevel(lv, funcName) {
+  const lines = [];
+  lines.push(`static void ${funcName}() {`);
+  lines.push(`\tmemset(tilemap, TILE_EMPTY, sizeof(tilemap));`);
+  lines.push(`\tnumCoins = 0;`);
+  lines.push(`\tnumEnemies = 0;`);
+  lines.push(`\tfor (int i = 0; i < MAX_VFX; i++) vfx[i].active = false;`);
+  lines.push(``);
+
+  for (let y = 0; y < lv.mapH; y++) {
+    let rowTiles = [];
+    let x = 0;
+    while (x < lv.mapW) {
+      const t = lv.tilemap[y][x];
+      if (t === 0) { x++; continue; }
+      let end = x;
+      while (end + 1 < lv.mapW && lv.tilemap[y][end + 1] === t) end++;
+      rowTiles.push({ t, x0: x, x1: end });
+      x = end + 1;
+    }
+    if (rowTiles.length === 0) continue;
+
+    lines.push(`\t// Row ${y}`);
+    for (const run of rowTiles) {
+      if (run.x0 === run.x1) {
+        lines.push(`\ttilemap[${y}][${run.x0}] = ${tileNames[run.t]};`);
+      } else {
+        lines.push(`\tfor (int x = ${run.x0}; x <= ${run.x1}; x++)`);
+        lines.push(`\t\ttilemap[${y}][x] = ${tileNames[run.t]};`);
+      }
+    }
+  }
+
+  if (lv.coins.length) {
+    lines.push(``);
+    lines.push(`\t// Crackers`);
+    for (let i = 0; i < lv.coins.length; i++) {
+      const c = lv.coins[i];
+      const bob = (i * 0.3).toFixed(1) + 'f';
+      lines.push(`\tcoins[numCoins++] = { { ${c.x.toFixed(1)}f, ${c.y.toFixed(1)}f, 14, 14 }, true, ${bob} };`);
+    }
+  }
+
+  if (lv.enemies && lv.enemies.length) {
+    lines.push(``);
+    lines.push(`\t// Enemies`);
+    for (const en of lv.enemies) {
+      lines.push(`\tspawnEnemy(${en.x.toFixed(1)}f, ${en.y.toFixed(1)}f);`);
+    }
+  }
+
+  // 3D tile overlay
+  if (lv.tile3d) {
+    let has3d = false;
+    for (let y = 0; y < lv.mapH && !has3d; y++)
+      for (let x = 0; x < lv.mapW && !has3d; x++)
+        if (lv.tile3d[y] && lv.tile3d[y][x]) has3d = true;
+    if (has3d) {
+      lines.push(``);
+      lines.push(`\t// 3D tiles`);
+      for (let y = 0; y < lv.mapH; y++)
+        for (let x = 0; x < lv.mapW; x++)
+          if (lv.tile3d[y] && lv.tile3d[y][x])
+            lines.push(`\ttile3dMap[${y}][${x}] = true;`);
+    }
+  }
+
+  // Warp overlay
+  if (lv.warpOverlay) {
+    let hasWarp = false;
+    for (let y = 0; y < lv.mapH && !hasWarp; y++)
+      for (let x = 0; x < lv.mapW && !hasWarp; x++)
+        if (lv.warpOverlay[y] && lv.warpOverlay[y][x]) hasWarp = true;
+    if (hasWarp) {
+      lines.push(``);
+      lines.push(`\t// Warp tiles`);
+      for (let y = 0; y < lv.mapH; y++)
+        for (let x = 0; x < lv.mapW; x++)
+          if (lv.warpOverlay[y] && lv.warpOverlay[y][x])
+            lines.push(`\twarpMap[${y}][${x}] = true;`);
+      if (lv.warpTarget >= 0)
+        lines.push(`\twarpTargetLevel = ${lv.warpTarget};`);
+    }
+  }
+
+  lines.push(``);
+  lines.push(`\t// Player spawn`);
+  lines.push(`\tspawnX = ${lv.spawnX.toFixed(1)}f;`);
+  lines.push(`\tspawnY = ${lv.spawnY.toFixed(1)}f;`);
+
+  // Dialogue
+  if (lv.dialoguePreEnabled && lv.dialoguePre) {
+    let hasPre = false;
+    for (let i = 0; i < 4; i++) if (lv.dialoguePre[i] && lv.dialoguePre[i].trim()) hasPre = true;
+    if (hasPre) {
+      lines.push(``);
+      lines.push(`\t// Pre-level dialogue`);
+      lines.push(`\tdialoguePreCount[currentLevel] = 0;`);
+      for (let i = 0; i < 4; i++) {
+        if (lv.dialoguePre[i] && lv.dialoguePre[i].trim()) {
+          const text = lv.dialoguePre[i].replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+          lines.push(`\tstrncpy(dialoguePre[currentLevel][${i}], "${text}", MAX_DIALOGUE_CHARS - 1);`);
+          lines.push(`\tdialoguePreCount[currentLevel]++;`);
+        }
+      }
+    }
+  }
+  if (lv.dialoguePostEnabled && lv.dialoguePost) {
+    let hasPost = false;
+    for (let i = 0; i < 4; i++) if (lv.dialoguePost[i] && lv.dialoguePost[i].trim()) hasPost = true;
+    if (hasPost) {
+      lines.push(``);
+      lines.push(`\t// Post-level dialogue`);
+      lines.push(`\tdialoguePostCount[currentLevel] = 0;`);
+      for (let i = 0; i < 4; i++) {
+        if (lv.dialoguePost[i] && lv.dialoguePost[i].trim()) {
+          const text = lv.dialoguePost[i].replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+          lines.push(`\tstrncpy(dialoguePost[currentLevel][${i}], "${text}", MAX_DIALOGUE_CHARS - 1);`);
+          lines.push(`\tdialoguePostCount[currentLevel]++;`);
+        }
+      }
+    }
+  }
+
+  lines.push(`}`);
+
+  let header = `// ${lv.name}\n`;
+  header += `// MAP_W = ${lv.mapW}, MAP_H = ${lv.mapH}\n\n`;
+
+  return header + lines.join('\n');
+}
+
+function showExport() {
+  syncToLevel();
+  const cpp = generateCppForLevel(cur(), 'buildLevel');
+  document.getElementById('modal-title').textContent = 'Export — ' + cur().name;
+  document.getElementById('export-text').value = cpp;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function showExportAll() {
+  syncToLevel();
+  let allCpp = '';
+  for (let i = 0; i < levels.length; i++) {
+    const funcName = i === 0 ? 'buildLevel' : 'buildLevel_' + (i + 1);
+    allCpp += generateCppForLevel(levels[i], funcName);
+    if (i < levels.length - 1) allCpp += '\n\n// ════════════════════════════════════════\n\n';
+  }
+  document.getElementById('modal-title').textContent = 'Export All Levels';
+  document.getElementById('export-text').value = allCpp;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+function copyExport() {
+  const ta = document.getElementById('export-text');
+  ta.select();
+  navigator.clipboard.writeText(ta.value);
+}
+
+// ═══════════════════════════════════════════════════
+// Save / Load JSON (all levels)
+// ═══════════════════════════════════════════════════
+function saveJSON() {
+  syncToLevel();
+  const data = { levels: levels.map(lv => ({
+    levelIndex: lv.levelIndex,
+    name: lv.name, mapW: lv.mapW, mapH: lv.mapH,
+    world: lv.world || 1,
+    isMenu: !!lv.isMenu,
+    isHidden: !!lv.isHidden,
+    tilemap: lv.tilemap, coins: lv.coins,
+    enemies: lv.enemies || [],
+    tile3d: lv.tile3d || null,
+    warpOverlay: lv.warpOverlay || null,
+    warpTarget: lv.warpTarget !== undefined ? lv.warpTarget : -1,
+    spawnX: lv.spawnX, spawnY: lv.spawnY,
+    dialoguePreEnabled: lv.dialoguePreEnabled,
+    dialoguePostEnabled: lv.dialoguePostEnabled,
+    dialoguePre: lv.dialoguePre,
+    dialoguePost: lv.dialoguePost,
+  }))};
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'levels.json';
+  a.click();
+}
+
+function loadJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Support both old single-level and new multi-level format
+      if (data.levels) {
+        levels = data.levels.map((lv, idx) => ({
+          levelIndex: lv.levelIndex !== undefined ? lv.levelIndex : idx,
+          name: lv.name || 'Untitled',
+          mapW: lv.mapW, mapH: lv.mapH,
+          world: lv.world || 1,
+          isMenu: !!lv.isMenu,
+          isHidden: !!lv.isHidden,
+          tilemap: lv.tilemap, coins: lv.coins || [],
+          enemies: lv.enemies || [],
+          tile3d: lv.tile3d || null,
+          warpOverlay: lv.warpOverlay || null,
+          warpTarget: lv.warpTarget !== undefined ? lv.warpTarget : -1,
+          spawnX: lv.spawnX || 48, spawnY: lv.spawnY || 164,
+          undoStack: [], redoStack: [],
+          dialoguePreEnabled: lv.dialoguePreEnabled || false,
+          dialoguePostEnabled: lv.dialoguePostEnabled || false,
+          dialoguePre: lv.dialoguePre || ['', '', '', ''],
+          dialoguePost: lv.dialoguePost || ['', '', '', ''],
+        }));
+      } else {
+        // Old single-level format
+        levels = [{
+          levelIndex: 0,
+          name: '1-1',
+          mapW: data.mapW, mapH: data.mapH,
+          world: 1,
+          isMenu: false,
+          isHidden: false,
+          tilemap: data.tilemap, coins: data.coins || [],
+          enemies: data.enemies || [],
+          tile3d: data.tile3d || null,
+          warpOverlay: data.warpOverlay || null,
+          warpTarget: data.warpTarget !== undefined ? data.warpTarget : -1,
+          spawnX: data.spawnX || 48, spawnY: data.spawnY || 164,
+          undoStack: [], redoStack: [],
+          dialoguePreEnabled: false,
+          dialoguePostEnabled: false,
+          dialoguePre: ['', '', '', ''],
+          dialoguePost: ['', '', '', ''],
+        }];
+      }
+      currentLevelIdx = Math.min(data.currentLevelIdx || 0, levels.length - 1);
+      currentLevelIdx = 0;
+      syncFromLevel();
+      buildLevelTabs();
+      autoSave();
+      render();
+    } catch (err) { alert('Invalid JSON: ' + err.message); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ═══════════════════════════════════════════════════
+// Import levels FROM main.cpp
+// ═══════════════════════════════════════════════════
+const TILE_NAME_TO_ID = {};
+tileNames.forEach((name, idx) => { TILE_NAME_TO_ID[name] = idx; });
+
+function parseLevelsFromCpp(content) {
+  const startMarker = '// @@EDITOR_LEVELS_START@@';
+  const endMarker = '// @@EDITOR_LEVELS_END@@';
+  const startIdx = content.indexOf(startMarker);
+  const endIdx = content.indexOf(endMarker);
+  if (startIdx < 0 || endIdx < 0) return null;
+  const block = content.substring(startIdx + startMarker.length, endIdx);
+
+  // Read MAP_W and MAP_H from the file
+  const mwMatch = content.match(/static constexpr int MAP_W\s*=\s*(\d+)/);
+  const mhMatch = content.match(/static constexpr int MAP_H\s*=\s*(\d+)/);
+  const fileMapW = mwMatch ? parseInt(mwMatch[1]) : 80;
+  const fileMapH = mhMatch ? parseInt(mhMatch[1]) : 16;
+
+  // Parse LEVEL_INFO table if it exists (now includes width and height)
+  const levelInfo = [];
+  const levelInfoRe = /\/\*\s*(\d+)\s*\*\/\s*\{\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(true|false)\s*,\s*([\d.]+)f?\s*,\s*(\d+)\s*,\s*(\d+)\s*\}/g;
+  let infoMatch;
+  while ((infoMatch = levelInfoRe.exec(block)) !== null) {
+    levelInfo[parseInt(infoMatch[1])] = {
+      name: infoMatch[2],
+      world: parseInt(infoMatch[3]),
+      isHidden: infoMatch[4] === 'true',
+      parTime: parseFloat(infoMatch[5]),
+      width: parseInt(infoMatch[6]),
+      height: parseInt(infoMatch[7])
+    };
+  }
+
+  // Parse metadata comments: // Level N: "name", World X[, HIDDEN]
+  const metadataRe = /\/\/\s*Level\s+(\d+):\s*"([^"]+)"\s*,\s*(World\s+\d+|Secret)(?:\s*,\s*(HIDDEN))?/g;
+  const metadata = [];
+  while ((infoMatch = metadataRe.exec(block)) !== null) {
+    const idx = parseInt(infoMatch[1]);
+    const isSecret = infoMatch[3] === 'Secret';
+    const world = isSecret ? 0 : parseInt(infoMatch[3].replace('World ', ''));
+    metadata[idx] = {
+      name: infoMatch[2],
+      world: world,
+      isHidden: !!infoMatch[4] || isSecret
+    };
+  }
+
+  // Split into individual buildLevel_N functions (include preceding comment)
+  const funcRegex = /(?:\/\/\s*Level\s+\d+:[^\n]*\n)?static void buildLevel_(\d+)\(\)\s*\{([\s\S]*?)\n\}/g;
+  const parsed = [];
+  let match;
+  while ((match = funcRegex.exec(block)) !== null) {
+    const funcNum = parseInt(match[1]);
+    const body = match[2];
+
+    // Get metadata from LEVEL_INFO table, metadata comment, or defaults
+    const info = levelInfo[funcNum - 1] || metadata[funcNum - 1] || {};
+    const isSecret = info.isHidden || info.world === 0;
+    const displayName = info.name || (isSecret ? '???' : ((info.world || 1) + '-' + funcNum));
+    const world = info.world !== undefined ? info.world : 1;
+
+    // Use per-level dimensions from LEVEL_INFO, or fall back to file defaults
+    const levelWidth = info.width || fileMapW;
+    const levelHeight = info.height || fileMapH;
+
+    const lv = {
+      levelIndex: funcNum - 1,
+      name: displayName,
+      mapW: levelWidth, mapH: levelHeight,
+      world: world,
+      isMenu: false,
+      isHidden: info.isHidden || false,
+      tilemap: [],
+      coins: [],
+      enemies: [],
+      spawnX: 1.5 * TILE_SIZE,
+      spawnY: (levelHeight - 2) * TILE_SIZE - 28,
+      undoStack: [], redoStack: [],
+      tile3d: [],
+      warpOverlay: [],
+      warpTarget: -1,
+      dialoguePreEnabled: false,
+      dialoguePostEnabled: false,
+      dialoguePre: ['', '', '', ''],
+      dialoguePost: ['', '', '', ''],
+    };
+    for (let y = 0; y < levelHeight; y++) lv.tilemap.push(new Array(levelWidth).fill(0));
+
+    // Parse single tile: tilemap[y][x] = TILE_NAME;
+    const singleRe = /tilemap\[(\d+)\]\[(\d+)\]\s*=\s*(\w+);/g;
+    let m;
+    while ((m = singleRe.exec(body)) !== null) {
+      const y = parseInt(m[1]), x = parseInt(m[2]);
+      const tid = TILE_NAME_TO_ID[m[3]];
+      if (tid !== undefined && y < levelHeight && x < levelWidth) lv.tilemap[y][x] = tid;
+    }
+
+    // Parse run: for (int x = x0; x <= x1; x++) tilemap[y][x] = TILE_NAME;
+    // Might be across two lines or on one line
+    const runRe = /for\s*\(int x\s*=\s*(\d+);\s*x\s*<=\s*(\d+);\s*x\+\+\)\s*(?:\n\s*)?tilemap\[(\d+)\]\[x\]\s*=\s*(\w+);/g;
+    while ((m = runRe.exec(body)) !== null) {
+      const x0 = parseInt(m[1]), x1 = parseInt(m[2]), y = parseInt(m[3]);
+      const tid = TILE_NAME_TO_ID[m[4]];
+      if (tid !== undefined) {
+        for (let x = x0; x <= x1 && x < levelWidth; x++) {
+          if (y < levelHeight) lv.tilemap[y][x] = tid;
+        }
+      }
+    }
+
+    // Parse coins: coins[numCoins++] = { { x, y, 14, 14 }, true, bob };
+    const coinRe = /coins\[numCoins\+\+\]\s*=\s*\{\s*\{\s*([\d.]+)f?,\s*([\d.]+)f?,\s*14,\s*14\s*\},\s*true,\s*[\d.]+f?\s*\}/g;
+    while ((m = coinRe.exec(body)) !== null) {
+      lv.coins.push({ x: parseFloat(m[1]), y: parseFloat(m[2]) });
+    }
+
+    // Parse enemies: spawnEnemy(x, y);
+    const enemyRe = /spawnEnemy\(\s*([\d.]+)f?,\s*([\d.]+)f?\s*\)/g;
+    while ((m = enemyRe.exec(body)) !== null) {
+      lv.enemies.push({ x: parseFloat(m[1]), y: parseFloat(m[2]) });
+    }
+
+    // Parse 3D tiles: tile3dMap[y][x] = true;
+    lv.tile3d = [];
+    for (let y = 0; y < levelHeight; y++) lv.tile3d.push(new Array(levelWidth).fill(false));
+    const t3dRe = /tile3dMap\[(\d+)\]\[(\d+)\]\s*=\s*true;/g;
+    while ((m = t3dRe.exec(body)) !== null) {
+      const y = parseInt(m[1]), x = parseInt(m[2]);
+      if (y < levelHeight && x < levelWidth) lv.tile3d[y][x] = true;
+    }
+
+    // Parse warp tiles: warpMap[y][x] = true;
+    lv.warpOverlay = [];
+    for (let y = 0; y < levelHeight; y++) lv.warpOverlay.push(new Array(levelWidth).fill(false));
+    const warpRe = /warpMap\[(\d+)\]\[(\d+)\]\s*=\s*true;/g;
+    while ((m = warpRe.exec(body)) !== null) {
+      const y = parseInt(m[1]), x = parseInt(m[2]);
+      if (y < levelHeight && x < levelWidth) lv.warpOverlay[y][x] = true;
+    }
+    const wtRe = /warpTargetLevel\s*=\s*(\d+);/;
+    const wtMatch = body.match(wtRe);
+    lv.warpTarget = wtMatch ? parseInt(wtMatch[1]) : -1;
+
+    // Parse spawn: spawnX = x; spawnY = y;
+    const spawnXRe = /spawnX\s*=\s*([\d.]+)f?;/;
+    const spawnYRe = /spawnY\s*=\s*([\d.]+)f?;/;
+    const sx = body.match(spawnXRe);
+    const sy = body.match(spawnYRe);
+    if (sx) lv.spawnX = parseFloat(sx[1]);
+    if (sy) lv.spawnY = parseFloat(sy[1]);
+
+    parsed.push(lv);
+  }
+
+  return parsed.length ? parsed : null;
+}
+
+async function importFromCpp() {
+  try {
+    if (!fileHandle) {
+      [fileHandle] = await window.showOpenFilePicker({
+        types: [{ description: 'C++ source', accept: { 'text/plain': ['.cpp'] } }],
+        multiple: false,
+      });
+      await saveFileHandle(fileHandle);
+    }
+    const perm = await fileHandle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      const req = await fileHandle.requestPermission({ mode: 'readwrite' });
+      if (req !== 'granted') { alert('File permission denied.'); return; }
+    }
+    const file = await fileHandle.getFile();
+    const content = await file.text();
+    const parsed = parseLevelsFromCpp(content);
+    if (!parsed) {
+      alert('Could not find or parse level functions between @@EDITOR_LEVELS_START@@ / @@EDITOR_LEVELS_END@@ markers.');
+      return;
+    }
+    levels = parsed;
+    currentLevelIdx = 0;
+    syncFromLevel();
+    buildLevelTabs();
+    panX = 20;
+    panY = -(mapH * TILE_SIZE * zoom - canvas.height) + 40;
+    autoSave();
+    render();
+    document.getElementById('status').textContent = 'Imported ' + levels.length + ' level(s) from main.cpp!';
+    setTimeout(() => { document.getElementById('status').textContent = 'Ready'; }, 3000);
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    alert('Import failed: ' + err.message);
+    console.error(err);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// localStorage auto-persistence
+// ═══════════════════════════════════════════════════
+const STORAGE_KEY = 'platformer_editor_levels';
+
+function autoSave() {
+  syncToLevel();
+  try {
+    const data = { levels: levels.map(lv => ({
+      name: lv.name, mapW: lv.mapW, mapH: lv.mapH,
+      world: lv.world || 1,
+      isMenu: !!lv.isMenu,
+      isHidden: !!lv.isHidden,
+      tilemap: lv.tilemap, coins: lv.coins,
+      enemies: lv.enemies || [],
+      tile3d: lv.tile3d || null,
+      warpOverlay: lv.warpOverlay || null,
+      warpTarget: lv.warpTarget !== undefined ? lv.warpTarget : -1,
+      spawnX: lv.spawnX, spawnY: lv.spawnY,
+      dialoguePreEnabled: !!lv.dialoguePreEnabled,
+      dialoguePostEnabled: !!lv.dialoguePostEnabled,
+      dialoguePre: lv.dialoguePre || ['', '', '', ''],
+      dialoguePost: lv.dialoguePost || ['', '', '', ''],
+    })), currentLevelIdx };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) { /* storage full or unavailable — silently ignore */ }
+}
+
+function autoLoad() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data.levels || !data.levels.length) return false;
+    levels = data.levels.map(lv => ({
+      name: lv.name || 'Untitled',
+      mapW: lv.mapW, mapH: lv.mapH,
+      world: lv.world || 1,
+      isMenu: !!lv.isMenu,
+      isHidden: !!lv.isHidden,
+      tilemap: lv.tilemap, coins: lv.coins || [],
+      enemies: lv.enemies || [],
+      tile3d: lv.tile3d || null,
+      warpOverlay: lv.warpOverlay || null,
+      warpTarget: lv.warpTarget !== undefined ? lv.warpTarget : -1,
+      spawnX: lv.spawnX || 48, spawnY: lv.spawnY || 164,
+      undoStack: [], redoStack: [],
+      dialoguePreEnabled: !!lv.dialoguePreEnabled,
+      dialoguePostEnabled: !!lv.dialoguePostEnabled,
+      dialoguePre: lv.dialoguePre || ['', '', '', ''],
+      dialoguePost: lv.dialoguePost || ['', '', '', ''],
+    }));
+    currentLevelIdx = Math.min(data.currentLevelIdx || 0, levels.length - 1);
+    syncFromLevel();
+    buildLevelTabs();
+    return true;
+  } catch (e) { return false; }
+}
+
+// ═══════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════
+autoLoad();
+resizeCanvas();
+panX = 20;
+panY = -(mapH * TILE_SIZE * zoom - canvas.height) + 40;
+render();
+</script>
+</body>
+</html>

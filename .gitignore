@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.crswap
+*.bak
+*.orig
+*~
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Build / release artifacts (do not commit)
+*.exe
+!scripts/**
+src-tauri/target/
+*.msi
+*.nsis
+*.wixpdb
+
+# Local cargo target if ever created inside the tree
+**/3ds-studio-cargo-target/

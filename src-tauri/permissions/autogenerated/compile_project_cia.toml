@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-compile-project-cia"
+description = "Enables the compile_project_cia command without any pre-configured scope."
+commands.allow = ["compile_project_cia"]
+
+[[permission]]
+identifier = "deny-compile-project-cia"
+description = "Denies the compile_project_cia command without any pre-configured scope."
+commands.deny = ["compile_project_cia"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-exists"
+description = "Enables the project_exists command without any pre-configured scope."
+commands.allow = ["project_exists"]
+
+[[permission]]
+identifier = "deny-project-exists"
+description = "Denies the project_exists command without any pre-configured scope."
+commands.deny = ["project_exists"]

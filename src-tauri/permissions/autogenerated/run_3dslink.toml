@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-run-3dslink"
+description = "Enables the run_3dslink command without any pre-configured scope."
+commands.allow = ["run_3dslink"]
+
+[[permission]]
+identifier = "deny-run-3dslink"
+description = "Denies the run_3dslink command without any pre-configured scope."
+commands.deny = ["run_3dslink"]

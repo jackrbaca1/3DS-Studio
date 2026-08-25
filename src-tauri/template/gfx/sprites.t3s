@@ -1,0 +1,9 @@
+--atlas -f rgba8888 -z auto
+CardBoard3ds-TileSet.png
+BottomMenuScreen.png
+LoadGameSelected.png
+NewGameSelected.png
+SettingsSelected.png
+Title.png
+Cavebg.png
+Cavebg2.png
