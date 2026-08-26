@@ -75,6 +75,21 @@ Release packaging: `npm run tauri:build` then `npm run release:package`. See [PL
 
 ---
 
+## AI assistance
+
+**Most of the application and template code was written with AI coding tools.** I am not claiming to have authored this codebase line-by-line by hand, and I do not personally understand most of the implementation in detail.
+
+What I *did* own and drive:
+
+- Product direction — what Studio should do for creators and for hardware
+- Pipelines — projects → editor → assets → `make` / devkitPro → `.3dsx` / `.cia`
+- Tooling & packaging — Windows install flow, Setup tools, docs, release artifacts
+- Hardware path — building for a real CFW 3DS (SD / FTP / 3dslink), not an in-app emulator
+
+Treat this as an **AI-assisted project** that I designed, steered, tested, and shipped. If you need a maintainer who can explain every Rust/JS/C++ detail from memory, that is not me — open an issue for bugs or questions, and expect honesty over gatekeeping.
+
+---
+
 ## About
 
 Created by **[Jack Baca](https://github.com/jackrbaca1)**. MIT — [LICENSE](LICENSE) · [THIRD_PARTY.md](THIRD_PARTY.md)
