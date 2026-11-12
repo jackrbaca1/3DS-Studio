@@ -95,7 +95,7 @@ Release packaging: `npm run tauri:build` then `npm run release:package`. See [PL
 
 ## AI assistance disclaimer
 
-**Most of the application was written with AI coding tools.** I am not claiming to have authored this codebase line-by-line by hand, and I do not personally understand the implementation in detail.
+**This application was written with the assistance of AI coding tools.** I am not claiming to have authored this codebase line-by-line by hand, and I may not personally understand the implementation in detail.
 
 What I *did* own and drive:
 
